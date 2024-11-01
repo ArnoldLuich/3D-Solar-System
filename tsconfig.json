@@ -1,11 +1,9 @@
 {
-    "compilerOptions": {
-      "target": "es6",
-      "module": "amd",
-      "moduleResolution": "node", 
-      "strict": true,
-      "esModuleInterop": true,
-      "outDir": "./dist",
-      "sourceMap": true
-    },
-  }
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "strict": true
+  },
+  "include": ["src"]
+}
