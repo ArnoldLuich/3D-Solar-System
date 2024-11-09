@@ -2,30 +2,30 @@ import { Scene, PerspectiveCamera, WebGLRenderer, PointLight } from 'three';
 import { addPlanet } from './addPlanet';
 import { TextureLoader, MeshStandardMaterial, SphereGeometry, Mesh } from 'three';
 
-import sunTexture from '../../assets/sun/sunmap.jpg';
+import sunTexture from '@assets/sun/sunmap.jpg';
 
-import mercuryTexture from '../../assets/mercury/mercurymap.jpg';
-import mercuryBumpMap from '../../assets/mercury/mercurybump.jpg';
+import mercuryTexture from '@assets/mercury/mercurymap.jpg';
+import mercuryBumpMap from '@assets/mercury/mercurybump.jpg';
 
-import venusTexture from '../../assets/venus/venusmap.jpg';
-import venusBumpMap from '../../assets/venus/venusbump.jpg';
+import venusTexture from '@assets/venus/venusmap.jpg';
+import venusBumpMap from '@assets/venus/venusbump.jpg';
 
-import earthTexture from '../../assets/earth/earthmap1k.jpg';
-import earthBumpMap from '../../assets/earth/earthbump1k.jpg';
+import earthTexture from '@assets/earth/earthmap1k.jpg';
+import earthBumpMap from '@assets/earth/earthbump1k.jpg';
 
-import marsTexture from '../../assets/mars/marsmap1k.jpg';
-import marsBumpMap from '../../assets/mars/marsbump1k.jpg';
+import marsTexture from '@assets/mars/marsmap1k.jpg';
+import marsBumpMap from '@assets/mars/marsbump1k.jpg';
 
-import jupiterTexture from '../../assets/jupiter/jupitermap.jpg';
+import jupiterTexture from '@assets/jupiter/jupitermap.jpg';
 
-import saturnTexture from '../../assets/saturn/saturnmap.jpg';
+import saturnTexture from '@assets/saturn/saturnmap.jpg';
 
-import uranusTexture from '../../assets/uranus/uranusmap.jpg';
+import uranusTexture from '@assets/uranus/uranusmap.jpg';
 
-import neptuneTexture from '../../assets/neptune/neptunemap.jpg';
+import neptuneTexture from '@assets/neptune/neptunemap.jpg';
 
-import plutoTexture from '../../assets/pluto/plutomap1k.jpg';
-import plutoBumpMap from '../../assets/pluto/plutobump1k.jpg';
+import plutoTexture from '@assets/pluto/plutomap1k.jpg';
+import plutoBumpMap from '@assets/pluto/plutobump1k.jpg';
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);

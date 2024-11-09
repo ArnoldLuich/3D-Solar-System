@@ -3,7 +3,11 @@
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["ESNext", "DOM"],
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@assets/*": ["./src/assets/*"],
+      "@shaders/*": ["./src/shaders/*"]
+    }
   },
   "include": ["src"]
 }

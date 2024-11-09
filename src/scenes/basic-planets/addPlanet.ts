@@ -1,6 +1,6 @@
 import { Group, SphereGeometry, ShaderMaterial, Mesh, TextureLoader, Texture } from 'three';
-import vertex from '../../shaders/vertex.glsl';
-import fragment from '../../shaders/fragment.glsl';
+import vertex from '@shaders/vertex.glsl';
+import fragment from '@shaders/fragment.glsl';
 
 const textureLoader = new TextureLoader();
 
