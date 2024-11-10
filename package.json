@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "@types/three": "^0.169.0",
+    "astronomy-engine": "^2.1.19",
     "three": "^0.170.0"
   },
   "devDependencies": {
