@@ -82,7 +82,7 @@ window.addEventListener('wheel', (event) => {
     camera.position.z = Math.max(100, Math.min(camera.position.z, 1500));
 });
 
-export function setupAnimationLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
+export function basicPlanetsSetupAnimationLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
         scene.children.forEach(obj => {
             if (obj.userData.rotationSpeed) {

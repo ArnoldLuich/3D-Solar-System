@@ -4,6 +4,9 @@
     "module": "ESNext",
     "lib": ["ESNext", "DOM"],
     "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
     "paths": {
       "@assets/*": ["./src/assets/*"],
       "@shaders/*": ["./src/shaders/*"]
