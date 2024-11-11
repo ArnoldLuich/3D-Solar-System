@@ -1,30 +1,35 @@
-import { Body, HelioVector, KM_PER_AU } from "astronomy-engine";
-import { ColorRepresentation, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
-import { clamp } from "three/src/math/MathUtils.js";
+import { BaryState, Body, EclipseEvent, GeoVector, HelioVector, KM_PER_AU, RotateVector, Rotation_EQJ_ECT, StateVector, Vector } from "astronomy-engine";
+import { AxesHelper, BufferGeometry, ColorRepresentation, DoubleSide, EllipseCurve, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
+import { clamp, degToRad, radToDeg } from "three/src/math/MathUtils.js";
+import { solarSystemData } from "./bodies";
 
 // https://api.le-systeme-solaire.net/en/
-const sunData = { id: "soleil", englishName: "Sun", meanRadius: 695508, sideralRotation: 0 };
-const mercuryData = { id: "mercure", englishName: "Mercury", meanRadius: 2439.4, sideralRotation: 1407.6 };
-const venusData = { id: "venus", englishName: "Venus", meanRadius: 6051.8, sideralRotation: -5832.5 };
-const earthData = { id: "terre", englishName: "Earth", meanRadius: 6371.0084, sideralRotation: 23.9345 };
-const marsData = { id: "mars", englishName: "Mars", meanRadius: 3389.5, sideralRotation: 24.6229 };
-const jupiterData = { id: "jupiter", englishName: "Jupiter", meanRadius: 69911, sideralRotation: 9.925 };
-const saturnData = { id: "saturne", englishName: "Saturn", meanRadius: 58232, sideralRotation: 10.656 };
-const uranusData = { id: "uranus", englishName: "Uranus", meanRadius: 25362, sideralRotation: -17.24 };
-const neptuneData = { id: "neptune", englishName: "Neptune", meanRadius: 24622, sideralRotation: 16.11 };
+const sunData = solarSystemData.find(x => x.id === 'soleil')!;
+const mercuryData = solarSystemData.find(x => x.id === 'mercure')!;
+const venusData = solarSystemData.find(x => x.id === 'venus')!;
+const earthData = solarSystemData.find(x => x.id === 'terre')!;
+const marsData = solarSystemData.find(x => x.id === 'mars')!;
+const jupiterData = solarSystemData.find(x => x.id === 'jupiter')!;
+const saturnData = solarSystemData.find(x => x.id === 'saturne')!;
+const uranusData = solarSystemData.find(x => x.id === 'uranus')!;
+const neptuneData = solarSystemData.find(x => x.id === 'neptune')!;
 
-interface LeBody {
-    id: string,
-    englishName: string,
-    meanRadius: number,
-    sideralRotation: number
-}
-
-function makeBody(body: Body, leBody: LeBody, color: ColorRepresentation = 0xff00ff) {
+function makeBody(body: Body, leBody: typeof solarSystemData[number], color: ColorRepresentation = 0xff00ff) {
     const name = leBody.englishName;
-    const radius = leBody.meanRadius / KM_PER_AU;
+    const radius = 0.05;// leBody.meanRadius / KM_PER_AU;
     const sideralRotation = leBody.sideralRotation;
-    return { body, name, radius, sideralRotation, color };
+    const semimajorAxis = leBody.semimajorAxis / KM_PER_AU;
+    const eccentricity = leBody.eccentricity;
+    const semiMinorAxis = semimajorAxis * Math.sqrt(1 - eccentricity**2);
+    const inclination = leBody.inclination; // angle deg from the ecliptic plane
+    const longAscNode = leBody.longAscNode;
+    const axialTilt = leBody.axialTilt;
+    const argPeriapsis = leBody.argPeriapsis;
+    const perihelion = leBody.perihelion / KM_PER_AU;
+    const aphelion = leBody.aphelion / KM_PER_AU;
+    return { body, name, radius, sideralRotation, color, semimajorAxis, 
+        semiMinorAxis, inclination, longAscNode, axialTilt, argPeriapsis,
+        perihelion, aphelion };
 }
 const bodies = [
     makeBody(Body.Sun, sunData, 0xfff000),
@@ -38,19 +43,52 @@ const bodies = [
     makeBody(Body.Neptune, neptuneData, 0x3c54cf)
 ];
 
-const maxRadius = Math.max(...bodies.map(b => b.radius));
-const bodies2 = bodies.map(b => ({...b, radius: b.radius / maxRadius })).map(b => ({...b, vec: HelioVector(b.body, new Date())}));
-console.log(bodies2);
-console.log(bodies2.map(b => HelioVector(b.body, new Date())))
+const bodies2 = bodies
+    .map(b => ({...b, vec: AstroVectorToThreeVector(HelioVector(b.body, new Date('2010-06-01')))}));
+// console.log(bodies2);
+// console.log(bodies2.map(x => x.vec))
+
+const VtoV3 = (v: Vector) => new Vector3(v.x, v.z, v.y);
+const J2000 = new Date('2000-01-01T12:00:00Z');
+
 
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
 
-console.log('as');
-console.log(HelioVector(Body.Sun, new Date()));
-console.log(HelioVector(Body.Mercury, new Date()));
+function AstroVectorToThreeVector(vec: Vector| StateVector) {
+    return new Vector3(vec.x, vec.z, vec.y);
+}
 
+function makePlane(b: typeof bodies2[number]) {
+    const geometry = new PlaneGeometry(5, 5, 1, 1);
+    geometry.rotateX(degToRad(90));
+    const material = new MeshBasicMaterial({color: 0xaafffa, transparent: true, opacity: 0.8, side: DoubleSide});
+    const plane = new Mesh(geometry, material);
+    plane.rotateY(degToRad(360-b.longAscNode));
+    plane.rotateX(-degToRad(b.inclination));
+    scene.add(plane);
+    console.log(b);
+}
+
+// find orbital ellipses based (not accurate)
+function makeEllipse(b: typeof bodies2[number]) {
+    console.log(b);
+    const curve = new EllipseCurve(0, 0, b.semiMinorAxis, b.semimajorAxis);
+    const points = curve.getPoints(50);
+    const geometry = new BufferGeometry().setFromPoints(points);
+    geometry.rotateX(degToRad(90));
+    const material = new LineBasicMaterial({ color: 0xfafafa });
+    const plane = new Line(geometry, material);
+    
+    plane.rotateY(degToRad(360-b.longAscNode));
+    plane.rotateX(-degToRad(b.inclination));
+    const shift = b.semimajorAxis-b.aphelion;
+    plane.translateX(shift);
+    scene.add(plane);
+}
+const axesHelper = new AxesHelper(1);
+scene.add( axesHelper );
 
 bodies2.forEach(b => {
     const geometry = new SphereGeometry(b.radius, 32, 16); 
@@ -59,60 +97,41 @@ bodies2.forEach(b => {
     sphere.position.set(b.vec.x, b.vec.y, b.vec.z);
     sphere.userData['body'] = b.body;
     scene.add(sphere);
+    makeEllipse(b);
 });
 
 
-
-camera.position.z = 15;
-camera.position.y = -15;
+camera.position.set(0, 3, 0);
+// camera.position.z = 0.1;
+// camera.position.y = 0.05;
 camera.lookAt(new Vector3(0, 0, 0));
 let selectedBody = bodies2[0];
-window.addEventListener('keyup', event => {
-    if (event.key === 'ArrowLeft') {
-        let idx = bodies2.indexOf(selectedBody) - 1;
-        idx = idx < 0 ? bodies2.length - 1 : idx;
-        selectedBody = bodies2[idx];
-    } else if (event.key === 'ArrowRight') {
-        let idx = bodies2.indexOf(selectedBody) + 1;
-        idx = idx > bodies2.length - 1 ? 0 : idx;
-        selectedBody = bodies2[idx];
-    }
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-        console.log(event, selectedBody);
-        const activeChild = scene.children.find(x => x.userData['body'] === selectedBody.body);
-        if (activeChild) {
-            const pos = activeChild.position;
-            camera.lookAt(pos);
-        }
-    }
-});
-window.addEventListener('wheel', (event) => {
-    const zoomSpeed = 0.1;
-    camera.position.z += event.deltaY * 0.01 * zoomSpeed;
-    camera.position.z = clamp(camera.position.z, 0.5, 30);
-    camera.position.y += event.deltaY * 0.01 * -zoomSpeed;
-    camera.position.y = clamp(camera.position.y, -30, -0.5);
-    const activeChild = scene.children.find(x => x.userData['body'] === selectedBody.body);
-    if (activeChild) {
-        const pos = activeChild.position;
-        camera.lookAt(pos);
-    }
-    console.log(camera.position);
-});
+
+function viewBody(body: typeof bodies2[number]) {
+    const pos = new Vector3(body.vec.x, body.vec.y, body.vec.z);
+    const newCameraPos = pos.clone()
+        .normalize()
+        .multiplyScalar(body.radius*10)
+        .add(new Vector3(0, body.radius * 3, 0))
+        .add(pos);
+    camera.position.set(newCameraPos.x, newCameraPos.y, newCameraPos.z);
+    camera.lookAt(pos);
+}
 
 export function accurateSetupTestAnimationLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
     let date = new Date();
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
-        date.setHours(date.getHours() + 2);
+        date.setHours(date.getHours() + 5);
         scene.children.forEach(c => {
             const body = c.userData['body'];
             if (body) {
-                const vec = HelioVector(body, date);
+                // rotate to the ecliptic plane
+                const rotmat = Rotation_EQJ_ECT(J2000);
+                const rotatedCoords = RotateVector(rotmat, HelioVector(body, date));
+                const vec = AstroVectorToThreeVector(rotatedCoords);
                 c.position.set(vec.x, vec.y, vec.z);
             }
         });
-
-    
         renderer.render(scene, camera);
     };
 };
