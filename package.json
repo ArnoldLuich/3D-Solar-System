@@ -2,6 +2,11 @@
   "name": "cg2024-3d-solar-system",
   "version": "0.0.0",
   "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "install-and-build": "npm install && npm run build",
+    "deploy": "npm run install-and-build && gh-pages -d dist"
+  },
   "dependencies": {
     "@types/three": "^0.169.0",
     "astronomy-engine": "^2.1.19",
