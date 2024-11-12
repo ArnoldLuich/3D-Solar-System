@@ -27,7 +27,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: github-pages
-        path: ./path-to-build-folder # Adjust to match your actual build output directory
+        path: ./dist # Adjust to match your actual build output directory
 
   # Deploy job
   deploy:
