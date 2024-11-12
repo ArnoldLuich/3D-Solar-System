@@ -4,7 +4,6 @@ import './scenes/accurate-coords/coordstest';
 import { accurateSetupTestAnimationLoop } from './scenes/accurate-coords/coordstest';
 import { cameraTestAnimLoop } from './scenes/camera-focus/scene';
 import { basicStarsSetupAnimationLoop } from './scenes/starField/starFieldScene';
-import { earthSatellitesAnimationLoop } from './scenes/earth-satellites/scene';
 
 type AnimationLoop = (renderer: WebGLRenderer) => XRFrameRequestCallback;
 
@@ -25,8 +24,7 @@ const animationLoops: AnimationLoop[] = [
   safeAnimationLoop(basicPlanetsSetupAnimationLoop),
   safeAnimationLoop(accurateSetupTestAnimationLoop),
   safeAnimationLoop(cameraTestAnimLoop),
-  safeAnimationLoop(basicStarsSetupAnimationLoop),
-  safeAnimationLoop(earthSatellitesAnimationLoop)
+  safeAnimationLoop(basicStarsSetupAnimationLoop)
 ];
 
 let currentSceneIndex: number = 0;
