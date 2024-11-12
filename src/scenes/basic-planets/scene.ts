@@ -1,4 +1,5 @@
 import { Scene, PerspectiveCamera, WebGLRenderer, PointLight } from 'three';
+import * as THREE from 'three';
 import { addPlanet } from './addPlanet';
 import { TextureLoader, MeshStandardMaterial, SphereGeometry, Mesh } from 'three';
 
@@ -29,6 +30,9 @@ import plutoBumpMap from '@assets/pluto/plutobump1k.jpg';
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
+
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
 
 const sunGeometry = new SphereGeometry(10, 64, 64); 
 const sunMaterial = new MeshStandardMaterial({
@@ -72,7 +76,6 @@ planets.forEach(planetData => {
     planet.userData.angle = 0; // Initial orbit angle
     scene.add(planet);
 });
-
 
 camera.position.z = 500;
 
