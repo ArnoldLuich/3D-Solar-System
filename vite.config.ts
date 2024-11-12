@@ -5,7 +5,7 @@ import path from "path";
 
 
 export default defineConfig({
-  base: '3D-Solar-System',
+  base: '/3D-Solar-System/',
   build: {
     target: 'esnext',
   },

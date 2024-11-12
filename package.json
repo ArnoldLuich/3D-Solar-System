@@ -18,7 +18,8 @@
     "vite-plugin-string": "^1.2.3"
   },
   "scripts": {
+  "install-and-build": "npm install && npm run build",
   "build": "vite build",
-  "deploy": "npm run build && gh-pages -d dist"
+  "deploy": "npm run install-and-build && gh-pages -d dist"
 }
 }
