@@ -5,6 +5,7 @@
   "dependencies": {
     "@types/three": "^0.169.0",
     "astronomy-engine": "^2.1.19",
+    "satellite.js": "^5.0.0",
     "three": "^0.170.0"
   },
   "devDependencies": {
