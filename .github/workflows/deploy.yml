@@ -24,10 +24,10 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-pages
-          path: ./path-to-build-folder # Adjust to match your actual build output directory
+      uses: actions/upload-artifact@v4
+      with:
+        name: github-pages
+        path: ./path-to-build-folder # Adjust to match your actual build output directory
 
   # Deploy job
   deploy:
