@@ -1,4 +1,4 @@
-name: test build-deploy
+name: build & deploy 3d solar system to github pages
 
 on:
   workflow_dispatch:
