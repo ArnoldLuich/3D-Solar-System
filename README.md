@@ -1,4 +1,8 @@
-## Prerequisites
+## Viewing
+[On github pages](https://arnoldluich.github.io/3D-Solar-System/)
+
+
+## Prerequisites to run locally
 
 install nodejs  
 
