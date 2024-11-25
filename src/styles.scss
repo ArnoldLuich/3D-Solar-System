@@ -1,3 +1,65 @@
+@font-face {
+  // protomolecule font from: https://github.com/ThinkDualBrain/Protomolecule
+  font-family: 'protomolecule';
+  src: url('./Protomolecule.woff2');
+  font-weight: normal/bold;
+  font-style: normal/italic;
+}
+
+html {
+  font-family: 'protomolecule', sans-serif;
+}
+
 body {
   margin: 0;
+  overflow: hidden;
+}
+
+:root {
+  --sun-color: #fff000;
+  --mercury-color: #bf9073;
+  --venus-color: #f3bebe;
+  --earth-color: #66bb5c;
+  --mars-color: #de4430;
+  --saturn-color: #f8d4bf;
+  --uranus-color: #64abff;
+  --neptune-color: #3c54cf;
+  --generic-color: floralwhite;
+}
+
+.canvas-overlay {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.planet-label {
+  position: absolute;
+  &__container {
+    transform: translate(-29px, -29px);
+    display: flex;
+    gap: 1em;
+    transition: opacity 150ms ease-in-out;
+    opacity: 0.75;
+    &:hover {
+      opacity: 1;
+      &:active {
+        opacity: 0.9;
+      }
+    }
+  }
+  &__circle {
+    display: inline-block;
+    border-radius: 50%;
+    width: 51px;
+    height: 51px;
+    border: 5px solid currentColor;
+    box-sizing: content-box;
+  }
+  &__label {
+    color: white;
+    font-size: x-large;
+    cursor: default;
+    user-select: none;
+  }
 }
