@@ -16,9 +16,9 @@ const safeAnimationLoop = (loop: (renderer: WebGLRenderer) => XRFrameRequestCall
   };
 };
 
-const renderer = new WebGLRenderer();
+const canvas = document.getElementById('canvas')!;
+const renderer = new WebGLRenderer({ canvas: canvas });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
 
 // List of animation loops for the scenes
 const animationLoops: AnimationLoop[] = [
