@@ -1,12 +1,11 @@
-import { Camera, Color, Mesh, MeshBasicMaterial, Object3D, OrthographicCamera, PerspectiveCamera, Raycaster, Scene, ShaderMaterial, Sphere, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three";
+import { Camera, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import vertexShader from './edge-sphere-vertex.glsl';
-import fragmentShader from './edge-sphere-fragment.glsl';
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
 
 const posOnScreen = (obj: Object3D, canvas: HTMLCanvasElement, camera: Camera) => {
+    // TODO fix the position being on the screen when the object is behind the camera
     const pos = obj.getWorldPosition(new Vector3()).project(camera);
     const rect = canvas.getBoundingClientRect();
     const x = (0.5 + pos.x / 2) * (rect.width);
@@ -45,14 +44,6 @@ const circleName = 'Select circle' as const;
     sphere.position.set(b, 0, 0);
     sphere.name = circleName;
     scene.add(sphere);
-    // {
-    //     const material = new ShaderMaterial( {fragmentShader, vertexShader, transparent: true, uniforms: { color: {value: new Color(0xff2255) } } });
-    //     const geometry = new SphereGeometry( 0.1, 32, 32 );
-    //     const circle = new Mesh(geometry, material);
-    //     circle.name = circleName;
-    //     circle.position.set(b, 0, 0);
-    //     scene.add(circle);
-    // }
 });
 
 camera.position.set(3, 0, 1.5);
