@@ -1,4 +1,4 @@
-import { BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
+import { BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -127,15 +127,14 @@ export function addPlanet({ name, texture, bumpMap, position = { x: 0, y: 0, z: 
     planetGroup.add(planetMesh);
 
     planetGroup.add(createPlanetLabel(name, () => {
-        controls.target = planetGroup.position.clone();
-        controls.update();
+        setCameraTarget(planetGroup);
     }));
 
     return planetGroup;
 }
 
-function makeEllipse(b: typeof bodies2[number]) {
-    const material = new LineBasicMaterial( { color: 0xfafafa } );
+function makeOrbitLine(b: typeof bodies2[number]) {
+    const material = new LineBasicMaterial( { color: 0xa9a9a9 } );
     const geometry = new BufferGeometry().setFromPoints( b.orbit );
     const line = new LineLoop( geometry, material );
     scene.add( line );
@@ -150,7 +149,7 @@ bodies2.forEach(planetData => {
         scale: 0.05//planetData.radius
     });
     planet.userData['body'] = planetData.body;
-    makeEllipse(planetData);
+    makeOrbitLine(planetData);
     scene.add(planet);
 });
 
@@ -182,6 +181,15 @@ camera.position.set(0, 3, 0);
 // camera.lookAt(new Vector3(0, 0, 0));
 
 const raycaster = new Raycaster();
+let target: Object3D | undefined = undefined;
+window.addEventListener('pointerdown', event => {
+    const x = (event.clientX / window.innerWidth) * 2 - 1;
+    const y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(new Vector2(x, y), camera);
+    const intersects = raycaster.intersectObjects(scene.children, false);
+    target = intersects?.[0]?.object;
+});
 window.addEventListener('pointerup', event => {
     const x = (event.clientX / window.innerWidth) * 2 - 1;
     const y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -189,15 +197,23 @@ window.addEventListener('pointerup', event => {
     raycaster.setFromCamera(new Vector2(x, y), camera);
     const intersects = raycaster.intersectObjects(scene.children, false);
     const obj = intersects?.[0]?.object;
-    if (obj) {
-        controls.target = obj.position.clone();
-        controls.update();
+    if (obj === target) {
+        setCameraTarget(obj);
     }
 });
 
 // const J2000 = new Date('2000-01-01T12:00:00Z');
 // const rotmat = Rotation_EQJ_ECT(J2000);
 
+let cameraTarget: Object3D | undefined = undefined;
+function setCameraTarget(to: Object3D) {
+    cameraTarget = to;
+}
+function updateCameraTarget() {
+    if (!cameraTarget) return;
+    controls.target = cameraTarget.position.clone();
+    controls.update();
+}
 
 const controls = new OrbitControls(camera);
 /**
@@ -220,6 +236,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
                 c.position.set(vec.x, vec.y, vec.z);
             }
         });
+        updateCameraTarget();
         renderer.render(scene, camera);
         labelRenderer.render(scene, camera);
     };
