@@ -22,11 +22,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 // List of animation loops for the scenes
 const animationLoops: AnimationLoop[] = [
-  safeAnimationLoop(basicPlanetsSetupAnimationLoop),
-  safeAnimationLoop(accurateSetupTestAnimationLoop),
+  // safeAnimationLoop(basicPlanetsSetupAnimationLoop),
+  // safeAnimationLoop(accurateSetupTestAnimationLoop),
   safeAnimationLoop(cameraTestAnimLoop),
-  safeAnimationLoop(basicStarsSetupAnimationLoop),
-  safeAnimationLoop(earthSatellitesAnimationLoop)
+  // safeAnimationLoop(basicStarsSetupAnimationLoop),
+  // safeAnimationLoop(earthSatellitesAnimationLoop)
 ];
 
 let currentSceneIndex: number = 0;

@@ -1,27 +1,21 @@
-import { Camera, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three";
+import { Mesh, MeshBasicMaterial, PerspectiveCamera, Raycaster, Scene, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
 const scene = new Scene();
-const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
+const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 20000);
 
-const posOnScreen = (obj: Object3D, canvas: HTMLCanvasElement, camera: Camera) => {
-    // TODO fix the position being on the screen when the object is behind the camera
-    const pos = obj.getWorldPosition(new Vector3()).project(camera);
-    const rect = canvas.getBoundingClientRect();
-    const x = (0.5 + pos.x / 2) * (rect.width);
-    const y = (0.5 - pos.y / 2) * (rect.height);
-    return new Vector2(x, y);
-};
+const labelRenderer = new CSS2DRenderer({element: document.getElementById('canvas-overlay')!});
+labelRenderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( labelRenderer.domElement );
 
-function createPlanetLabel(planet: string = 'earth') {
+function createPlanetLabel(name: string = 'earth', onclick: typeof HTMLDivElement.prototype['onclick'] = (ev) => console.log('click')) {
     const label = document.createElement('div');
-    label.className = `planet-label ${planet}`;
-    label.style.color = `var(--${planet}-color, var(--generic-color))`;
+    label.className = `planet-label ${name}`;
+    label.style.color = `var(--${name}-color, var(--generic-color))`;
     label.innerHTML = `
-        <div class="planet-label__container">
-            <span class="planet-label__circle"></span>
-            <span class="planet-label__label">${planet}</span>
-        </div>
+        <span class="planet-label__circle"></span>
+        <span class="planet-label__label">${name}</span>
     `;
     label.addEventListener('wheel', (ev) => {
         /** block wheel scroll on the label and send it to the canvas */
@@ -31,18 +25,26 @@ function createPlanetLabel(planet: string = 'earth') {
             { clientX: ev.clientX, clientY: ev.clientY, deltaX: ev.deltaX, deltaY: ev.deltaY });
         window.document.getElementsByTagName('canvas')?.[0].dispatchEvent(ev2);
     });
-    label.onmouseup = (ev) => console.log('click');
-    document.getElementById('canvas-overlay')?.appendChild(label);
+    label.onclick = onclick;
     return label;
 }
 
 const circleName = 'Select circle' as const;
-[0, 2, 4].forEach(b => {
+([[0, 'sun'], [2, 'earth'], [4, 'mars']] as const).forEach(b => {
     const geometry = new SphereGeometry(0.1, 32, 32); 
     const material = new MeshBasicMaterial({ color: 0x9fbb6a }); 
     const sphere = new Mesh(geometry, material);
-    sphere.position.set(b, 0, 0);
+    sphere.position.set(b[0], 0, 0);
     sphere.name = circleName;
+
+    const div = createPlanetLabel(b[1], (ev) => {
+        controls.target = sphere.position.clone();
+        controls.update();
+    });
+    const label = new CSS2DObject(div);
+    label.layers.set(0);
+    sphere.add(label);
+    sphere.layers.enableAll();
     scene.add(sphere);
 });
 
@@ -65,7 +67,7 @@ window.addEventListener('pointerup', event => {
     }
 });
 
-const texts = [createPlanetLabel('sun'), createPlanetLabel('earth'), createPlanetLabel('mars')];
+// const texts = [createPlanetLabel('sun'), createPlanetLabel('earth'), createPlanetLabel('mars')];
 
 const controls = new OrbitControls(camera);
 /**
@@ -78,16 +80,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     controls.update();
 
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
-        let idx = 0;
-        scene.children.forEach(object => {
-            if (object.name === circleName) {
-                // const dist = camera.position.distanceTo(object.position);
-                // object.scale.setScalar(Math.max(1, dist*0.5));
-                const pos = posOnScreen(object, renderer.domElement, camera);
-                texts[idx].style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-                idx += 1;
-            }
-        });
         renderer.render(scene, camera);
+        labelRenderer.render(scene, camera);
     };
 };
