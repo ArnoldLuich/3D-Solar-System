@@ -28,6 +28,7 @@ import neptuneTexture from '@assets/neptune/neptunemap.jpg';
 import { solarSystemData } from "../accurate-coords/bodies";
 import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
 import { degToRad } from "three/src/math/MathUtils.js";
+import { createStars, setupBloomEffect } from "../starField/createStars";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0000000001, 20000);
@@ -191,8 +192,14 @@ function updateCameraTarget() {
 
 //#endregion
 
+const stars = createStars({ count: 2000 });
+scene.add(stars);
+
+// Set up the bloom effect
+
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
+    const composer = setupBloomEffect(renderer, scene, camera);
     controls.domElement = renderer.domElement;
     controls.connect();
     controls.target = new Vector3(2, 0, 0);
