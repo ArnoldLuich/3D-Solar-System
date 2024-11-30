@@ -1,4 +1,4 @@
-import { ColorRepresentation, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
+import { BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -30,7 +30,8 @@ import plutoBumpMap from '@assets/pluto/plutobump1k.jpg';
 import vertex from '@shaders/vertex.glsl';
 import fragment from '@shaders/fragment.glsl';
 import { solarSystemData } from "../accurate-coords/bodies";
-import { Body, HelioVector, KM_PER_AU, RotateVector, Rotation_EQJ_ECT, StateVector, Vector } from "astronomy-engine";
+import { BaryState, Body, HelioVector, KM_PER_AU, NextPlanetApsis, PlanetOrbitalPeriod, RotateVector, Rotation_EQJ_ECT, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
+import { degToRad } from "three/src/math/MathUtils.js";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 20000);
@@ -66,10 +67,27 @@ const saturnData = solarSystemData.find(x => x.id === 'saturne')!;
 const uranusData = solarSystemData.find(x => x.id === 'uranus')!;
 const neptuneData = solarSystemData.find(x => x.id === 'neptune')!;
 
+const VtoV3 = (v: Vector) => new Vector3(v.x, v.z, v.y);
+
 function makeBody(body: Body, leBody: typeof solarSystemData[number], color: ColorRepresentation = 0xff00ff, texture: string, bumpMap?: string) {
     const name = leBody.englishName;
     const radius = leBody.meanRadius / KM_PER_AU;
-    return { body, name, radius, leBody, texture, bumpMap };
+
+    let orbit: Vector3[] = [];
+    if (body !== Body.Sun) {
+        const apsis = SearchPlanetApsis(body, new Date());
+        const nextApsis = NextPlanetApsis(body, apsis);
+        const nextNextApsis = NextPlanetApsis(body, nextApsis);
+        const times = nextNextApsis.time.tt - apsis.time.tt;
+        const n = 100;
+        orbit = [...Array(n).keys()]
+            .map(v => times/n*v)
+            .map(v => apsis.time.AddDays(v))
+            .map(v => HelioVector(body, v))
+            .map(v => VtoV3(v));
+    }
+    
+    return { body, name, radius, leBody, texture, bumpMap, orbit };
 }
 const bodies = [
     makeBody(Body.Sun, sunData, 0xfff000, sunTexture),
@@ -87,7 +105,6 @@ function AstroVectorToThreeVector(vec: Vector| StateVector) {
 }
 const bodies2 = bodies
     .map(b => ({...b, vec: AstroVectorToThreeVector(HelioVector(b.body, new Date('2010-06-01')))}));
-console.log(bodies2);
 
 export interface PlanetOptions {
     name: string;
@@ -117,6 +134,13 @@ export function addPlanet({ name, texture, bumpMap, position = { x: 0, y: 0, z: 
     return planetGroup;
 }
 
+function makeEllipse(b: typeof bodies2[number]) {
+    const material = new LineBasicMaterial( { color: 0xfafafa } );
+    const geometry = new BufferGeometry().setFromPoints( b.orbit );
+    const line = new LineLoop( geometry, material );
+    scene.add( line );
+}
+
 bodies2.forEach(planetData => {
     const planet = addPlanet({
         name: planetData.name,
@@ -126,6 +150,7 @@ bodies2.forEach(planetData => {
         scale: 0.05//planetData.radius
     });
     planet.userData['body'] = planetData.body;
+    makeEllipse(planetData);
     scene.add(planet);
 });
 
@@ -151,7 +176,7 @@ function createPlanetLabel(name: string = 'earth', onclick: typeof HTMLDivElemen
     return new CSS2DObject(label);
 }
 
-camera.position.set(3, 0, 1.5);
+camera.position.set(0, 3, 0);
 // camera.position.z = 0.1;
 // camera.position.y = 0.05;
 // camera.lookAt(new Vector3(0, 0, 0));
@@ -170,8 +195,9 @@ window.addEventListener('pointerup', event => {
     }
 });
 
-const J2000 = new Date('2000-01-01T12:00:00Z');
-const rotmat = Rotation_EQJ_ECT(J2000);
+// const J2000 = new Date('2000-01-01T12:00:00Z');
+// const rotmat = Rotation_EQJ_ECT(J2000);
+
 
 const controls = new OrbitControls(camera);
 /**
@@ -185,12 +211,12 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     let date = new Date();
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
         date.setHours(date.getHours() + 5);
-        console.log(scene.children);
         scene.children.forEach(c => {
             const body = c.userData['body'];
             if (body) {
-                const rotatedCoords = RotateVector(rotmat, HelioVector(body, date));// rotate to the ecliptic plane
-                const vec = AstroVectorToThreeVector(rotatedCoords);
+                const v = HelioVector(body, date);
+                // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
+                const vec = AstroVectorToThreeVector(v);
                 c.position.set(vec.x, vec.y, vec.z);
             }
         });
