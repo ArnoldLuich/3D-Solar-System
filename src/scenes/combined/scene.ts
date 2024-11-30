@@ -1,4 +1,4 @@
-import { AxesHelper, BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
+import { AxesHelper, BoxGeometry, BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -29,6 +29,8 @@ import { solarSystemData } from "../accurate-coords/bodies";
 import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { createStars, setupBloomEffect } from "../starField/createStars";
+import { fetchTLEData } from "../earth-satellites/fetch-tle";
+import { sgp4, twoline2satrec } from "satellite.js";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0000000001, 20000);
@@ -48,6 +50,7 @@ const saturnData = solarSystemData.find(x => x.id === 'saturne')!;
 const uranusData = solarSystemData.find(x => x.id === 'uranus')!;
 const neptuneData = solarSystemData.find(x => x.id === 'neptune')!;
 
+//#region create planets
 function AstroVectorToThreeVector(vec: Vector| StateVector) {
     return new Vector3(vec.x, vec.z, vec.y);
 }
@@ -58,6 +61,7 @@ function makeBody(body: Body, leBody: typeof solarSystemData[number], color: Col
 
     let orbit: Vector3[] = [];
     if (body !== Body.Sun) {
+        // pre-calculate orbit for accurate orbit indicators
         const apsis = SearchPlanetApsis(body, new Date());
         const nextApsis = NextPlanetApsis(body, apsis);
         const nextNextApsis = NextPlanetApsis(body, nextApsis);
@@ -112,6 +116,7 @@ function createPlanetLabel(name: string = 'earth', onclick: typeof HTMLDivElemen
 }
 
 const planetMeshName = "planet mesh" as const;
+const satellitesName = "satellites" as const;
 const textureLoader = new TextureLoader();
 export function addPlanet(data: typeof bodies2[number]) {
     const planetGroup = new Group();
@@ -135,6 +140,26 @@ export function addPlanet(data: typeof bodies2[number]) {
         setCameraTarget(planetGroup);
     }));
 
+    if (data.body === Body.Earth) {
+        const satellites = new Group();
+        const satelliteSize = 0.001;
+        satellites.name = satellitesName;
+        fetchTLEData('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle').then(satellitesData => {
+            satellitesData?.forEach(satelliteData => {
+                const satelliteGeometry = new BoxGeometry(satelliteSize, satelliteSize, satelliteSize);
+                const satelliteMaterial = new MeshBasicMaterial({ color: 0xffffff });
+                const satelliteCube = new Mesh(satelliteGeometry, satelliteMaterial);
+
+                satelliteCube.userData.name = satelliteData.name;
+                satelliteCube.userData.satrec = twoline2satrec(satelliteData.line1, satelliteData.line2);
+
+                satellites.add(satelliteCube);
+            })
+        });
+
+        planetMesh.add(satellites);
+    }
+
     return planetGroup;
 }
 
@@ -152,6 +177,8 @@ bodies2.forEach(planetData => {
     makeOrbitLine(planetData);
     scene.add(planet);
 });
+
+//#endregion
 
 
 //#region camera focus/target
@@ -206,20 +233,37 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     controls.update();
     let date = new Date();
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
-        const hourDiff = 0.1;
-        date.setHours(date.getHours() + hourDiff);
+        date = new Date(date.getTime() + time);
         scene.children.forEach(c => {
-            const body = c.userData['body'];
-            if (body) {
-                const v = HelioVector(body, date);
-                // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
-                const vec = AstroVectorToThreeVector(v);
-                c.position.set(vec.x, vec.y, vec.z);
-            }
+            const body = c.userData['body'] as Body;
+            if (!body) return;
+            const v = HelioVector(body, date);
+            // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
+            const vec = AstroVectorToThreeVector(v);
+            c.position.set(vec.x, vec.y, vec.z);
+
             const mesh = c.getObjectByName(planetMeshName);
-            if (mesh) {
-                const hoursForFullRot = c.userData['rotation'];
-                if (!hoursForFullRot) return;
+            if (!mesh) return;
+
+            const satellites = mesh.getObjectByName(satellitesName);
+            if (satellites) {
+                satellites.children.forEach(satelliteElement => {
+                    const positionAndVelocity = sgp4(satelliteElement.userData.satrec, v.t.ut);
+                    const positionEci = positionAndVelocity.position;
+                    if (!positionEci || typeof positionEci === 'boolean') return;
+                    
+                    const satellitePosX = positionEci.x / 6371.0;
+                    const satellitePosY = positionEci.z / 6371.0;
+                    const satellitePosZ = positionEci.y / 6371.0;
+        
+                    satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
+                });
+            }
+            
+            const hoursForFullRot = c.userData['rotation'];
+            if (hoursForFullRot) {
+                // the sun doesn't have rotation in le system solaire data
+                const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
                 const degs = (360 * hourDiff) / hoursForFullRot;
                 mesh.rotateY(degToRad(degs));
             }
