@@ -2,7 +2,7 @@ import { WebGLRenderer } from 'three';
 import { basicPlanetsSetupAnimationLoop } from './scenes/basic-planets/scene';
 import './scenes/accurate-coords/coordstest';
 import { accurateSetupTestAnimationLoop } from './scenes/accurate-coords/coordstest';
-import { cameraTestAnimLoop } from './scenes/camera-focus/scene';
+import { cameraTestAnimLoop } from './scenes/combined/scene';
 import { basicStarsSetupAnimationLoop } from './scenes/starField/starFieldScene';
 import { earthSatellitesAnimationLoop } from './scenes/earth-satellites/scene';
 
@@ -22,11 +22,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 
 // List of animation loops for the scenes
 const animationLoops: AnimationLoop[] = [
-  safeAnimationLoop(basicPlanetsSetupAnimationLoop),
-  safeAnimationLoop(accurateSetupTestAnimationLoop),
+  // safeAnimationLoop(basicPlanetsSetupAnimationLoop),
+  // safeAnimationLoop(accurateSetupTestAnimationLoop),
   safeAnimationLoop(cameraTestAnimLoop),
-  safeAnimationLoop(basicStarsSetupAnimationLoop),
-  safeAnimationLoop(earthSatellitesAnimationLoop)
+  // safeAnimationLoop(basicStarsSetupAnimationLoop),
+  // safeAnimationLoop(earthSatellitesAnimationLoop)
 ];
 
 let currentSceneIndex: number = 0;
