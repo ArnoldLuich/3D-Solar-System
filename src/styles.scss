@@ -40,20 +40,19 @@ body {
 .planet-label {
   position: absolute;
   pointer-events: all; // enable clicks etc. on the labels
-  &__container {
-    transform: translate(-29px, -29px);
-    display: flex;
-    gap: 1em;
-    transition: opacity 150ms ease-in-out;
-    opacity: 0.75;
-    &:hover {
-      opacity: 1;
-      &:active {
-        opacity: 0.9;
-      }
+  // display: flex;
+  display: grid;
+  grid: '. circle label'/1em auto 1em;
+  gap: 1em;
+  opacity: 0.7;
+  &:hover {
+    opacity: 0.95;
+    &:active {
+      opacity: 0.8;
     }
   }
   &__circle {
+    grid-area: circle;
     display: inline-block;
     border-radius: 50%;
     width: 51px;
@@ -62,6 +61,7 @@ body {
     box-sizing: content-box;
   }
   &__label {
+    grid-area: label;
     color: white;
     font-size: x-large;
     cursor: default;
