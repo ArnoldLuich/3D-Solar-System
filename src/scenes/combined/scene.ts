@@ -32,6 +32,8 @@ import { createStars, setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import { sgp4, twoline2satrec } from "satellite.js";
 
+import { loadStarsFromJson } from "../starField/realStarField";
+
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0000000001, 20000);
 
@@ -219,10 +221,9 @@ function updateCameraTarget() {
 
 //#endregion
 
-const stars = createStars({ count: 2000 });
+const stars = await loadStarsFromJson('src/scenes/starField/stars.json');
 scene.add(stars);
 
-// Set up the bloom effect
 
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
