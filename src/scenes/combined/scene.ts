@@ -35,7 +35,7 @@ import { sgp4, twoline2satrec } from "satellite.js";
 import { loadStarsFromJson } from "../starField/realStarField";
 
 const scene = new Scene();
-const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0000000001, 20000);
+const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0003125, 20000);
 
 const labelRenderer = new CSS2DRenderer({element: document.getElementById('canvas-overlay')!});
 labelRenderer.setSize( window.innerWidth, window.innerHeight );
