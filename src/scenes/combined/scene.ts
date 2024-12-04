@@ -1,29 +1,29 @@
-import { AxesHelper, BoxGeometry, BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
+import { AxesHelper,IcosahedronGeometry, BoxGeometry, BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer, SRGBColorSpace, BackSide } from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
 
-import sunTexture from '@assets/sun/sunmap.jpg';
+import sunTexture from '@assets/sun/8k_sun.jpg';
 
-import mercuryTexture from '@assets/mercury/mercurymap.jpg';
+import mercuryTexture from '@assets/mercury/8k_mercury.jpg';
 import mercuryBumpMap from '@assets/mercury/mercurybump.jpg';
 
-import venusTexture from '@assets/venus/venusmap.jpg';
+import venusTexture from '@assets/venus/8k_venus_surface.jpg';
 import venusBumpMap from '@assets/venus/venusbump.jpg';
 
-import earthTexture from '@assets/earth/earthmap1k.jpg';
+import earthTexture from '@assets/earth/8k_earth_daymap.jpg';
 import earthBumpMap from '@assets/earth/earthbump1k.jpg';
 
-import marsTexture from '@assets/mars/marsmap1k.jpg';
+import marsTexture from '@assets/mars/8k_mars.jpg';
 import marsBumpMap from '@assets/mars/marsbump1k.jpg';
 
-import jupiterTexture from '@assets/jupiter/jupitermap.jpg';
+import jupiterTexture from '@assets/jupiter/8k_jupiter.jpg';
 
-import saturnTexture from '@assets/saturn/saturnmap.jpg';
+import saturnTexture from '@assets/saturn/8k_saturn.jpg';
 
-import uranusTexture from '@assets/uranus/uranusmap.jpg';
+import uranusTexture from '@assets/uranus/2k_uranus.jpg';
 
-import neptuneTexture from '@assets/neptune/neptunemap.jpg';
+import neptuneTexture from '@assets/neptune/2k_neptune.jpg';
 
 import { solarSystemData } from "../accurate-coords/bodies";
 import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
@@ -124,8 +124,10 @@ export function addPlanet(data: typeof bodies2[number]) {
     const planetGroup = new Group();
     planetGroup.position.set(data.vec.x, data.vec.y, data.vec.z);
 
-    const geometry = new SphereGeometry(1, 64, 64);
-    const material = new MeshBasicMaterial({map: textureLoader.load(data.texture)})
+    const geometry = new IcosahedronGeometry(1, 128);
+    const material = new MeshBasicMaterial({
+        map: textureLoader.load(data.texture),
+    })
 
     const planetMesh = new Mesh(geometry, material);
     planetMesh.scale.setScalar(data.radius);
@@ -171,6 +173,11 @@ function makeOrbitLine(b: typeof bodies2[number]) {
     const line = new LineLoop(geometry, material);
     scene.add( line );
 }
+
+
+const stars = await loadStarsFromJson('src/scenes/starField/stars.json');
+scene.add(stars);
+
 
 bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
@@ -218,12 +225,6 @@ function updateCameraTarget() {
     controls.target = cameraTarget.position.clone();
     controls.update();
 }
-
-//#endregion
-
-const stars = await loadStarsFromJson('src/scenes/starField/stars.json');
-scene.add(stars);
-
 
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
