@@ -216,6 +216,7 @@ window.addEventListener('pointerup', event => {
 });
 
 const controls = new OrbitControls(camera);
+controls.minDistance = 0.06
 let cameraTarget: Object3D | undefined = undefined;
 function setCameraTarget(to: Object3D) {
     cameraTarget = to;
