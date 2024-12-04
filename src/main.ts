@@ -44,11 +44,3 @@ function switchScene(direction: 'next' | 'prev'): void {
 }
 
 renderer.setAnimationLoop(animationLoops[currentSceneIndex](renderer));
-
-window.addEventListener('keydown', (event: KeyboardEvent): void => {
-  if (event.key === 'ArrowRight') {
-    switchScene('next');
-  } else if (event.key === 'ArrowLeft') {
-    switchScene('prev');
-  }
-});

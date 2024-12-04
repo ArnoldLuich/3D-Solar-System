@@ -227,6 +227,40 @@ function updateCameraTarget() {
     controls.update();
 }
 
+var timeSpeedMultiplier = 1;
+
+window.addEventListener('keydown', (event: KeyboardEvent): void => {
+    if (event.key === 'ArrowRight') {
+        if (timeSpeedMultiplier == -10) {
+            timeSpeedMultiplier = 1;
+        }
+        else if (timeSpeedMultiplier < 0) {
+            timeSpeedMultiplier /= 10;
+        }
+        else if (timeSpeedMultiplier < 1000) {
+            timeSpeedMultiplier *= 10;
+        }
+    } else if (event.key === 'ArrowLeft') {
+        if (timeSpeedMultiplier == 1) {
+            timeSpeedMultiplier = -10;
+        }
+        else if (timeSpeedMultiplier > 0) {
+            timeSpeedMultiplier /= 10;
+        }
+        else if (timeSpeedMultiplier > -1000) {
+            timeSpeedMultiplier *= 10;
+        }
+    }
+});
+
+var simulation_time_label = document.createElement('div');
+simulation_time_label.className = 'generic-text time';
+simulation_time_label.style.color = "var(--generic-color)";
+simulation_time_label.style.top = 50 + "px";
+simulation_time_label.style.right = 50 + "px";
+document.body.appendChild(simulation_time_label);
+
+
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
     const composer = setupBloomEffect(renderer, scene, camera);
@@ -236,7 +270,17 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     controls.update();
     let date = new Date();
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
+        time *= timeSpeedMultiplier;
         date = new Date(date.getTime() + time);
+        simulation_time_label.innerHTML = date.toLocaleString('en-GB', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false // Use 24-hour format
+        });
+
         scene.children.forEach(c => {
             const body = c.userData['body'] as Body;
             if (!body) return;
@@ -267,7 +311,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
             if (hoursForFullRot) {
                 // the sun doesn't have rotation in le system solaire data
                 const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                const degs = (360 * hourDiff) / hoursForFullRot;
+                const degs = (360 * hourDiff) / 0;
                 mesh.rotateY(degToRad(degs));
             }
         });
