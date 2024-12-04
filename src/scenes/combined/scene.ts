@@ -203,7 +203,7 @@ window.addEventListener('pointerup', event => {
     raycaster.setFromCamera(new Vector2(x, y), camera);
     const intersects = raycaster.intersectObjects(scene.children, false);
     const obj = intersects?.[0]?.object;
-    if (obj === target) {
+    if (obj === target && !(obj instanceof LineLoop)) {
         setCameraTarget(obj);
     }
 });
