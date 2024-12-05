@@ -26,3 +26,8 @@ npx vite
 ```  
 
 3. Open the url the server starts on
+
+
+## Star data script
+
+https://colab.research.google.com/drive/1_m-18zicIGDoT-5d1hn1UNaw67QuFBfI?usp=sharing
