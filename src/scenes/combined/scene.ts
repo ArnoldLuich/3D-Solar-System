@@ -33,6 +33,7 @@ import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import { sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
+import { SceneUtils } from "three/examples/jsm/Addons.js";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 5000);
@@ -68,7 +69,7 @@ function makeBody(body: Body, leBody: typeof solarSystemData[number], color: Col
         const nextApsis = NextPlanetApsis(body, apsis);
         const nextNextApsis = NextPlanetApsis(body, nextApsis);
         const times = nextNextApsis.time.tt - apsis.time.tt;
-        const n = 100;
+        const n = 1000;
         orbit = [...Array(n).keys()]
             .map(v => times/n*v)
             .map(v => apsis.time.AddDays(v))
@@ -79,7 +80,7 @@ function makeBody(body: Body, leBody: typeof solarSystemData[number], color: Col
     const tilt = -leBody.axialTilt; // degrees
     const rotation = leBody.sideralRotation; // hours for full rotation
     
-    return { body, name, radius, leBody, texture, bumpMap, orbit, tilt, rotation };
+    return { body, name, radius, leBody, texture, bumpMap, orbit, tilt, rotation, color };
 }
 const bodies = [
     makeBody(Body.Sun, sunData, 0xfff000, sunTexture),
@@ -168,7 +169,7 @@ export function addPlanet(data: typeof bodies2[number]) {
 }
 
 function makeOrbitLine(b: typeof bodies2[number]) {
-    const material = new LineBasicMaterial( { color: 0xa9a9a9 } );
+    const material = new LineBasicMaterial( { color: b.color } );
     const geometry = new BufferGeometry().setFromPoints(b.orbit);
     const line = new LineLoop(geometry, material);
     scene.add( line );
@@ -230,6 +231,7 @@ function updateCameraTarget() {
     controls.minZoom = cameraMinDistance;
     controls.minDistance = cameraMinDistance;
     controls.update();
+    // console.log(controls.target.clone().sub(camera.position.clone()));
 }
 setCameraTarget(scene.getObjectByName('Sun'));
 
@@ -279,7 +281,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     let date = new Date();
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
         time *= timeSpeedMultiplier;
-        date = new Date(date.getTime());// + time);
+        date = new Date(date.getTime() + time);
         simulation_time_label.innerHTML = date.toLocaleString('en-GB', {
             year: 'numeric',
             month: '2-digit',
