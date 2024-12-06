@@ -35,7 +35,7 @@ import { sgp4, twoline2satrec } from "satellite.js";
 import { loadStarsFromJson } from "../starField/realStarField";
 
 const scene = new Scene();
-const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 20000);
+const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 5000);
 
 const labelRenderer = new CSS2DRenderer({element: document.getElementById('canvas-overlay')!});
 labelRenderer.setSize( window.innerWidth, window.innerHeight );
@@ -181,6 +181,7 @@ scene.add(stars);
 
 bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
+    planet.name = planetData.name;
     planet.userData['body'] = planetData.body;
     planet.userData['rotation'] = planetData.rotation;
     planet.userData['radius'] = planetData.radius;
@@ -218,9 +219,8 @@ window.addEventListener('pointerup', event => {
 });
 
 const controls = new OrbitControls(camera);
-controls.minDistance = 0.06
 let cameraTarget: Object3D | undefined = undefined;
-function setCameraTarget(to: Object3D) {
+function setCameraTarget(to: Object3D | undefined) {
     cameraTarget = to;
 }
 function updateCameraTarget() {
@@ -231,6 +231,9 @@ function updateCameraTarget() {
     controls.minDistance = cameraMinDistance;
     controls.update();
 }
+setCameraTarget(scene.getObjectByName('Sun'));
+
+//#endregion
 
 var timeSpeedMultiplier = 1;
 
