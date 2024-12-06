@@ -30,6 +30,7 @@ import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, State
 import { degToRad } from "three/src/math/MathUtils.js";
 import { createStars, setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
+import satellitesTle from "../earth-satellites/satellites-tle.txt?raw";
 import { sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
@@ -149,8 +150,9 @@ export function addPlanet(data: typeof bodies2[number]) {
         const satellites = new Group();
         const satelliteSize = 0.001;
         satellites.name = satellitesName;
-        fetchTLEData('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle').then(satellitesData => {
-            satellitesData?.forEach(satelliteData => {
+        // fetchTLEData('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle', true).then(satellitesData => {
+        fetchTLEData(satellitesTle, false).then(satellitesData => {
+        satellitesData?.forEach(satelliteData => {
                 const satelliteGeometry = new BoxGeometry(satelliteSize, satelliteSize, satelliteSize);
                 const satelliteMaterial = new MeshBasicMaterial({ color: 0xffffff });
                 const satelliteCube = new Mesh(satelliteGeometry, satelliteMaterial);

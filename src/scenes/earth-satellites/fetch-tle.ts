@@ -1,7 +1,10 @@
-export async function fetchTLEData(endpoint: string) {
+export async function fetchTLEData(endpointOrData: string, url: boolean) {
     try {
-        const response = await fetch(endpoint);
-        const data = await response.text();
+        let data = endpointOrData;
+        if (url) {
+            const response = await fetch(endpointOrData);
+            data = await response.text();
+        }
 
         const tleLines = data.trim().split('\n');
         const tleData = [];
