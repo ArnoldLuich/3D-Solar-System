@@ -45,8 +45,6 @@ const bodies = [
 
 const bodies2 = bodies
     .map(b => ({...b, vec: AstroVectorToThreeVector(HelioVector(b.body, new Date('2010-06-01')))}));
-// console.log(bodies2);
-// console.log(bodies2.map(x => x.vec))
 
 const VtoV3 = (v: Vector) => new Vector3(v.x, v.z, v.y);
 const J2000 = new Date('2000-01-01T12:00:00Z');
@@ -68,12 +66,10 @@ function makePlane(b: typeof bodies2[number]) {
     plane.rotateY(degToRad(360-b.longAscNode));
     plane.rotateX(-degToRad(b.inclination));
     scene.add(plane);
-    console.log(b);
 }
 
 // find orbital ellipses based (not accurate)
 function makeEllipse(b: typeof bodies2[number]) {
-    console.log(b);
     const curve = new EllipseCurve(0, 0, b.semiMinorAxis, b.semimajorAxis);
     const points = curve.getPoints(50);
     const geometry = new BufferGeometry().setFromPoints(points);

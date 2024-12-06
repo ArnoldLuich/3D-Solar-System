@@ -33,9 +33,10 @@ import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import { sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
+import { SceneUtils } from "three/examples/jsm/Addons.js";
 
 const scene = new Scene();
-const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0003125, 20000);
+const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 5000);
 
 const labelRenderer = new CSS2DRenderer({element: document.getElementById('canvas-overlay')!});
 labelRenderer.setSize( window.innerWidth, window.innerHeight );
@@ -59,7 +60,7 @@ function AstroVectorToThreeVector(vec: Vector| StateVector) {
 
 function makeBody(body: Body, leBody: typeof solarSystemData[number], color: ColorRepresentation = 0xff00ff, texture: string, bumpMap?: string) {
     const name = leBody.englishName;
-    const radius = 0.05;// leBody.meanRadius / KM_PER_AU;
+    const radius = leBody.meanRadius / KM_PER_AU;
 
     let orbit: Vector3[] = [];
     if (body !== Body.Sun) {
@@ -68,7 +69,7 @@ function makeBody(body: Body, leBody: typeof solarSystemData[number], color: Col
         const nextApsis = NextPlanetApsis(body, apsis);
         const nextNextApsis = NextPlanetApsis(body, nextApsis);
         const times = nextNextApsis.time.tt - apsis.time.tt;
-        const n = 100;
+        const n = 1000;
         orbit = [...Array(n).keys()]
             .map(v => times/n*v)
             .map(v => apsis.time.AddDays(v))
@@ -79,7 +80,7 @@ function makeBody(body: Body, leBody: typeof solarSystemData[number], color: Col
     const tilt = -leBody.axialTilt; // degrees
     const rotation = leBody.sideralRotation; // hours for full rotation
     
-    return { body, name, radius, leBody, texture, bumpMap, orbit, tilt, rotation };
+    return { body, name, radius, leBody, texture, bumpMap, orbit, tilt, rotation, color };
 }
 const bodies = [
     makeBody(Body.Sun, sunData, 0xfff000, sunTexture),
@@ -168,7 +169,7 @@ export function addPlanet(data: typeof bodies2[number]) {
 }
 
 function makeOrbitLine(b: typeof bodies2[number]) {
-    const material = new LineBasicMaterial( { color: 0xa9a9a9 } );
+    const material = new LineBasicMaterial( { color: b.color } );
     const geometry = new BufferGeometry().setFromPoints(b.orbit);
     const line = new LineLoop(geometry, material);
     scene.add( line );
@@ -181,11 +182,14 @@ scene.add(stars);
 
 bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
+    planet.name = planetData.name;
     planet.userData['body'] = planetData.body;
     planet.userData['rotation'] = planetData.rotation;
+    planet.userData['radius'] = planetData.radius;
     makeOrbitLine(planetData);
     scene.add(planet);
 });
+console.log(bodies2);
 
 //#endregion
 
@@ -216,16 +220,22 @@ window.addEventListener('pointerup', event => {
 });
 
 const controls = new OrbitControls(camera);
-controls.minDistance = 0.06
 let cameraTarget: Object3D | undefined = undefined;
-function setCameraTarget(to: Object3D) {
+function setCameraTarget(to: Object3D | undefined) {
     cameraTarget = to;
 }
 function updateCameraTarget() {
     if (!cameraTarget) return;
     controls.target = cameraTarget.position.clone();
+    const cameraMinDistance = (cameraTarget.userData['radius'] ?? 0) * 1.5;
+    controls.minZoom = cameraMinDistance;
+    controls.minDistance = cameraMinDistance;
     controls.update();
+    // console.log(controls.target.clone().sub(camera.position.clone()));
 }
+setCameraTarget(scene.getObjectByName('Sun'));
+
+//#endregion
 
 var timeSpeedMultiplier = 1;
 
@@ -311,7 +321,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
             if (hoursForFullRot) {
                 // the sun doesn't have rotation in le system solaire data
                 const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                const degs = (360 * hourDiff) / 0;
+                const degs = (360 * hourDiff) / hourDiff;
                 mesh.rotateY(degToRad(degs));
             }
         });
