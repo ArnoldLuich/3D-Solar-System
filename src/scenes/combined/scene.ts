@@ -35,7 +35,7 @@ import { sgp4, twoline2satrec } from "satellite.js";
 import { loadStarsFromJson } from "../starField/realStarField";
 
 const scene = new Scene();
-const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.0003125, 20000);
+const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 20000);
 
 const labelRenderer = new CSS2DRenderer({element: document.getElementById('canvas-overlay')!});
 labelRenderer.setSize( window.innerWidth, window.innerHeight );
@@ -59,7 +59,7 @@ function AstroVectorToThreeVector(vec: Vector| StateVector) {
 
 function makeBody(body: Body, leBody: typeof solarSystemData[number], color: ColorRepresentation = 0xff00ff, texture: string, bumpMap?: string) {
     const name = leBody.englishName;
-    const radius = 0.05;// leBody.meanRadius / KM_PER_AU;
+    const radius = leBody.meanRadius / KM_PER_AU;
 
     let orbit: Vector3[] = [];
     if (body !== Body.Sun) {
@@ -183,9 +183,11 @@ bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
     planet.userData['body'] = planetData.body;
     planet.userData['rotation'] = planetData.rotation;
+    planet.userData['radius'] = planetData.radius;
     makeOrbitLine(planetData);
     scene.add(planet);
 });
+console.log(bodies2);
 
 //#endregion
 
@@ -224,6 +226,9 @@ function setCameraTarget(to: Object3D) {
 function updateCameraTarget() {
     if (!cameraTarget) return;
     controls.target = cameraTarget.position.clone();
+    const cameraMinDistance = (cameraTarget.userData['radius'] ?? 0) * 1.5;
+    controls.minZoom = cameraMinDistance;
+    controls.minDistance = cameraMinDistance;
     controls.update();
 }
 
@@ -271,7 +276,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     let date = new Date();
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
         time *= timeSpeedMultiplier;
-        date = new Date(date.getTime() + time);
+        date = new Date(date.getTime());// + time);
         simulation_time_label.innerHTML = date.toLocaleString('en-GB', {
             year: 'numeric',
             month: '2-digit',
@@ -311,7 +316,7 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
             if (hoursForFullRot) {
                 // the sun doesn't have rotation in le system solaire data
                 const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                const degs = (360 * hourDiff) / 0;
+                const degs = (360 * hourDiff) / hourDiff;
                 mesh.rotateY(degToRad(degs));
             }
         });
