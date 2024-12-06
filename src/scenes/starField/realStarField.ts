@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import starJson from './stars.json?raw';
 
 const starMaterial = new THREE.PointsMaterial({
     size: 1, // Default size; will scale based on magnitude later
@@ -22,14 +23,14 @@ function sphericalToCartesian(ra: number, dec: number): [number, number, number]
 }
 
 // Function to load stars from the JSON file and return the `THREE.Points` object
-export async function loadStarsFromJson(filePath: string): Promise<THREE.Points> {
+export async function loadStarsFromJson(): Promise<THREE.Points> {
     try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch star data: ${response.statusText}`);
-        }
+        // const response = await fetch(filePath);
+        // if (!response.ok) {
+        //     throw new Error(`Failed to fetch star data: ${response.statusText}`);
+        // }
 
-        const starData: Array<{ name: string; ra: number; dec: number; magnitude: number }> = await response.json();
+        const starData: Array<{ name: string; ra: number; dec: number; magnitude: number }> = JSON.parse(starJson);
 
         const positions: number[] = [];
         const sizes: number[] = [];

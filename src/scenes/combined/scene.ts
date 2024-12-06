@@ -176,7 +176,7 @@ function makeOrbitLine(b: typeof bodies2[number]) {
 }
 
 
-const stars = await loadStarsFromJson('src/scenes/starField/stars.json');
+const stars = await loadStarsFromJson();
 scene.add(stars);
 
 
