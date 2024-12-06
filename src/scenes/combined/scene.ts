@@ -242,6 +242,9 @@ setCameraTarget(scene.getObjectByName('Sun'));
 var timeSpeedMultiplier = 1;
 
 window.addEventListener('keydown', (event: KeyboardEvent): void => {
+    if (event.key === 'ArrowDown') {
+        timeSpeedMultiplier = 0;
+    }
     if (event.key === 'ArrowRight') {
         if (timeSpeedMultiplier == -10) {
             timeSpeedMultiplier = 1;
@@ -323,8 +326,10 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
             if (hoursForFullRot) {
                 // the sun doesn't have rotation in le system solaire data
                 const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                const degs = (360 * hourDiff) / hourDiff;
-                mesh.rotateY(degToRad(degs));
+                if (hourDiff > 0) {
+                    const degs = (360 * hourDiff) / hourDiff;
+                    mesh.rotateY(degToRad(degs));
+                }
             }
         });
         updateCameraTarget();
