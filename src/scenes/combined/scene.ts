@@ -1,4 +1,4 @@
-import { AxesHelper,IcosahedronGeometry, BoxGeometry, BufferGeometry, ColorRepresentation, EllipseCurve, Group, Line, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, PointLight, Raycaster, Scene, ShaderMaterial, SphereGeometry, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer, SRGBColorSpace, BackSide } from "three";
+import { AxesHelper, MeshStandardMaterial, BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color} from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -28,7 +28,7 @@ import neptuneTexture from '@assets/neptune/2k_neptune.jpg';
 import { solarSystemData } from "../accurate-coords/bodies";
 import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
 import { degToRad } from "three/src/math/MathUtils.js";
-import { createStars, setupBloomEffect } from "../starField/createStars";
+import { setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import satellitesTle from "../earth-satellites/satellites-tle.txt?raw";
 import { sgp4, twoline2satrec } from "satellite.js";
@@ -126,21 +126,18 @@ export function addPlanet(data: typeof bodies2[number]) {
     const planetGroup = new Group();
     planetGroup.position.set(data.vec.x, data.vec.y, data.vec.z);
 
-    const geometry = new IcosahedronGeometry(1, 128);
-    const material = new MeshBasicMaterial({
-        map: textureLoader.load(data.texture),
-    })
-
-    const planetMesh = new Mesh(geometry, material);
-    planetMesh.scale.setScalar(data.radius);
-    planetMesh.rotateX(degToRad(data.tilt));
-    planetMesh.name = planetMeshName;
+    const planet = new Mesh(new SphereGeometry(1, 64, 32), new MeshPhongMaterial({ map: textureLoader.load(data.texture)}));
+    planet.scale.setScalar(data.radius);
+    planet.rotateX(degToRad(data.tilt));
+    planet.name = planetMeshName;
+    planet.castShadow = true;
+    planet.receiveShadow = true;
 
     const axesHelper = new AxesHelper(5);
     scene.add(axesHelper);
-    planetMesh.add(axesHelper);
 
-    planetGroup.add(planetMesh);
+    planet.add(axesHelper);
+    planetGroup.add(planet);
 
     planetGroup.add(createPlanetLabel(data.name, () => {
         setCameraTarget(planetGroup);
@@ -164,7 +161,31 @@ export function addPlanet(data: typeof bodies2[number]) {
             })
         });
 
-        planetMesh.add(satellites);
+        planet.add(satellites);
+    }
+    else if (data.body === Body.Sun){
+        const sunLight = new PointLight(0xffffff, 1, 0);
+        sunLight.position.set(0, 0, 0);
+        sunLight.castShadow = true;
+        // Configure Shadow Properties
+        sunLight.shadow.mapSize.width = 4096;
+        sunLight.shadow.mapSize.height = 4096;
+        sunLight.distance = 10000;
+        sunLight.decay = 0.5;
+        
+        planet.add(sunLight)
+
+        const sunMaterial = new MeshPhongMaterial({
+            map: textureLoader.load(data.texture),
+            emissive: new Color(0xffff00), // Bright yellow glow
+            emissiveIntensity: 1, // Adjust intensity
+            emissiveMap: textureLoader.load(data.texture)
+        });
+    
+        // Apply the new material to the Sun
+        planet.material = sunMaterial;
+
+        
     }
 
     return planetGroup;
@@ -180,7 +201,6 @@ function makeOrbitLine(b: typeof bodies2[number]) {
 
 const stars = await loadStarsFromJson();
 scene.add(stars);
-
 
 bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
