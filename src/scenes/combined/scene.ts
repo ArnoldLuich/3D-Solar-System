@@ -1,4 +1,4 @@
-import { AxesHelper, MeshStandardMaterial, BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color} from "three";
+import { AxesHelper, IcosahedronGeometry,BufferAttribute, BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color} from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -122,11 +122,15 @@ function createPlanetLabel(name: string = 'earth', onclick: typeof HTMLDivElemen
 const planetMeshName = "planet mesh" as const;
 const satellitesName = "satellites" as const;
 const textureLoader = new TextureLoader();
+
 export function addPlanet(data: typeof bodies2[number]) {
     const planetGroup = new Group();
     planetGroup.position.set(data.vec.x, data.vec.y, data.vec.z);
 
-    const planet = new Mesh(new SphereGeometry(1, 64, 32), new MeshPhongMaterial({ map: textureLoader.load(data.texture)}));
+    const planet = new Mesh(
+        new IcosahedronGeometry(1, 20),
+        new MeshPhongMaterial({ map: textureLoader.load(data.texture)}));
+
     planet.scale.setScalar(data.radius);
     planet.rotateX(degToRad(data.tilt));
     planet.name = planetMeshName;
