@@ -1,4 +1,4 @@
-import { AxesHelper, IcosahedronGeometry,BufferAttribute, BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color} from "three";
+import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color} from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -53,6 +53,7 @@ const jupiterData = solarSystemData.find(x => x.id === 'jupiter')!;
 const saturnData = solarSystemData.find(x => x.id === 'saturne')!;
 const uranusData = solarSystemData.find(x => x.id === 'uranus')!;
 const neptuneData = solarSystemData.find(x => x.id === 'neptune')!;
+console.log(earthData.moons);
 
 //#region create planets
 function AstroVectorToThreeVector(vec: Vector| StateVector) {
@@ -111,8 +112,11 @@ function createPlanetLabel(name: string = 'earth', onclick: typeof HTMLDivElemen
         /** block wheel scroll on the label and send it to the canvas */
         ev.preventDefault(); 
         ev.stopImmediatePropagation();
+
+        const scrollSpeed = 15;
+
         const ev2 = new WheelEvent(ev.type, 
-            { clientX: ev.clientX, clientY: ev.clientY, deltaX: ev.deltaX, deltaY: ev.deltaY });
+            { clientX: ev.clientX, clientY: ev.clientY, deltaX: ev.deltaX, deltaY: ev.deltaY * scrollSpeed});
         window.document.getElementsByTagName('canvas')?.[0].dispatchEvent(ev2);
     });
     label.onclick = onclick;
@@ -176,23 +180,89 @@ export function addPlanet(data: typeof bodies2[number]) {
         sunLight.shadow.mapSize.height = 4096;
         sunLight.distance = 10000;
         sunLight.decay = 0.5;
+
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 1000;
+        sunLight.shadow.bias = -0.001; // Reduce shadow acn
         
         planet.add(sunLight)
 
         const sunMaterial = new MeshPhongMaterial({
             map: textureLoader.load(data.texture),
             emissive: new Color(0xffff00), // Bright yellow glow
-            emissiveIntensity: 1, // Adjust intensity
+            emissiveIntensity: 1,
             emissiveMap: textureLoader.load(data.texture)
         });
-    
         // Apply the new material to the Sun
         planet.material = sunMaterial;
-
-        
+    } else if (data.body === Body.Saturn){
+        createPlanetRings(
+            planet, 
+            'src/assets/saturn/saturnringcolor.jpg', 
+            'src/assets/saturn/saturnringpattern.gif', 
+            1.625, 
+            3.167, 
+            64, 
+            5 // Tilt the ring by 5 degrees
+        );
+    } else if (data.body === Body.Uranus){
+        createPlanetRings(
+            planet, 
+            'src/assets/uranus/uranusringcolour.jpg', 
+            'src/assets/uranus/uranusringtrans.gif', 
+            1.218, 
+            2.644, 
+            64, 
+            25 // Tilt the ring by 5 degrees
+        );
     }
 
     return planetGroup;
+}
+
+function createPlanetRings(planet: Object3D, ringTexturePath: string, alphaTexturePath: string, innerRadius: number, outerRadius: number, ringSegments: number, ringTiltAngle: number): void {
+    const textureLoader = new TextureLoader();
+    const ringTexture = textureLoader.load(ringTexturePath); 
+    const alphaTexture = textureLoader.load(alphaTexturePath); 
+
+    ringTexture.wrapS = RepeatWrapping; 
+    ringTexture.wrapT = RepeatWrapping; 
+    ringTexture.repeat.set(1, 1); 
+
+    alphaTexture.wrapS = RepeatWrapping;
+    alphaTexture.wrapT = RepeatWrapping;
+    alphaTexture.repeat.set(1, 1);
+
+    const ringGeometry = new RingGeometry(innerRadius, outerRadius, ringSegments);
+
+    const pos = ringGeometry.attributes.position;
+    const uv = ringGeometry.attributes.uv;
+    const v3 = new Vector3();
+    
+    for (let i = 0; i < pos.count; i++) {
+        v3.fromBufferAttribute(pos, i);
+        const radialDistance = v3.length();
+        uv.setXY(i, radialDistance > (innerRadius + outerRadius) / 2 ? 0 : 1, 1);
+    }
+    
+    uv.needsUpdate = true;
+
+    const ringMaterial = new MeshPhongMaterial({
+        map: ringTexture,
+        alphaMap: alphaTexture,
+        transparent: true,
+        side: DoubleSide,
+    });
+
+    const ringMesh = new Mesh(ringGeometry, ringMaterial);
+    ringMesh.rotation.x = Math.PI / 2;
+    ringMesh.rotation.y = MathUtils.degToRad(ringTiltAngle); // Tilt angle for the ring
+    
+
+    ringMesh.castShadow = true;
+    ringMesh.receiveShadow = true;
+
+    planet.add(ringMesh);
 }
 
 function makeOrbitLine(b: typeof bodies2[number]) {
@@ -205,6 +275,9 @@ function makeOrbitLine(b: typeof bodies2[number]) {
 
 const stars = await loadStarsFromJson();
 scene.add(stars);
+
+
+
 
 bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
@@ -247,9 +320,12 @@ window.addEventListener('pointerup', event => {
 
 const controls = new OrbitControls(camera);
 let cameraTarget: Object3D | undefined = undefined;
+
+
 function setCameraTarget(to: Object3D | undefined) {
     cameraTarget = to;
 }
+
 function updateCameraTarget() {
     if (!cameraTarget) return;
     controls.target = cameraTarget.position.clone();
@@ -357,6 +433,8 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
             }
         });
         updateCameraTarget();
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = PCFSoftShadowMap;
         renderer.render(scene, camera);
         labelRenderer.render(scene, camera);
     };
