@@ -25,6 +25,12 @@ import uranusTexture from '@assets/uranus/2k_uranus.jpg';
 
 import neptuneTexture from '@assets/neptune/2k_neptune.jpg';
 
+import saturnringcolor from '@assets/saturn/saturnringcolor.jpg';
+import saturnringpattern from '@assets/saturn/saturnringpattern.gif';
+
+import uranusringcolour from '@assets/uranus/uranusringcolour.jpg';
+import uranusringtrans from '@assets/uranus/uranusringtrans.gif';
+
 import { solarSystemData } from "../accurate-coords/bodies";
 import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
 import { degToRad } from "three/src/math/MathUtils.js";
@@ -199,8 +205,8 @@ export function addPlanet(data: typeof bodies2[number]) {
     } else if (data.body === Body.Saturn){
         createPlanetRings(
             planet, 
-            'src/assets/saturn/saturnringcolor.jpg', 
-            'src/assets/saturn/saturnringpattern.gif', 
+            saturnringcolor, 
+            saturnringpattern, 
             1.625, 
             3.167, 
             64, 
@@ -209,8 +215,8 @@ export function addPlanet(data: typeof bodies2[number]) {
     } else if (data.body === Body.Uranus){
         createPlanetRings(
             planet, 
-            'src/assets/uranus/uranusringcolour.jpg', 
-            'src/assets/uranus/uranusringtrans.gif', 
+            uranusringcolour, 
+            uranusringtrans, 
             1.218, 
             2.644, 
             64, 
