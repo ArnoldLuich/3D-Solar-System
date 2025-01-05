@@ -75,3 +75,89 @@ body {
   height: 50px;
   font-size: x-large;
 }
+
+#controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid: '. date rate rate rate time .'
+        '. . back pause forward . .'
+        / 1fr auto auto auto auto auto 1fr;
+  gap: 8px;
+  #date-label {
+    grid-area: date;
+    justify-self: end;
+    text-align: center;
+    width: 20ch;
+  }
+  #rate-label {
+    grid-area: rate;
+    justify-self: center;
+    text-align: center;
+    width: 20ch;
+  }
+  #time-label {
+    grid-area: time;
+    justify-self: start;
+    text-align: center;
+    width: 20ch;
+  }
+  #back-button {
+    grid-area: back;
+    justify-self: end;
+  }
+  #pause-button {
+    grid-area: pause;
+    justify-self: center;
+  }
+  #play-button {
+    grid-area: pause;
+    justify-self: center;
+  }
+  #forward-button {
+    grid-area: forward;
+    justify-self: start;
+  }
+  .label {
+    color: white;
+    font-size: x-large;
+  }
+  .control-button {
+    width: 48px;
+    height: 48px;
+    padding: 4px;
+    background: transparent;
+    border: none;
+    opacity: 0.7;
+    &:hover {
+      opacity: 0.95;
+      &:active {
+        opacity: 0.8;
+      }
+    }
+  }
+  .icon {
+    width: 100%;
+    height: 100%;
+    margin: auto;
+    display: block;
+    &__play {
+      background: url(assets/icons/play.svg);
+      background-size: contain;
+    }
+    &__pause {
+      background: url(assets/icons/pause.svg);
+      background-size: contain;
+    }
+    &__rewind {
+      background: url(assets/icons/rewind.svg);
+      background-size: contain;
+    }
+    &__forward {
+      background: url(assets/icons/forward.svg);
+      background-size: contain;
+    }
+  }
+}
