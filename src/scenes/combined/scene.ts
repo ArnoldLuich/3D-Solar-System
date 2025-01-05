@@ -35,6 +35,7 @@ import { sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
 import { SceneUtils } from "three/examples/jsm/Addons.js";
+import { getNextDateTime, updateDateTimeLabels } from "./date-time-controls";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 5000);
@@ -292,13 +293,6 @@ window.addEventListener('keydown', (event: KeyboardEvent): void => {
     }
 });
 
-var simulation_time_label = document.createElement('div');
-simulation_time_label.className = 'generic-text time';
-simulation_time_label.style.color = "var(--generic-color)";
-simulation_time_label.style.top = 50 + "px";
-simulation_time_label.style.right = 50 + "px";
-document.body.appendChild(simulation_time_label);
-
 
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
@@ -307,18 +301,14 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     controls.connect();
     controls.target = new Vector3(2, 0, 0);
     controls.update();
+    
     let date = new Date();
+    let prevTime = 0;
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
-        time *= timeSpeedMultiplier;
-        date = new Date(date.getTime() + time);
-        simulation_time_label.innerHTML = date.toLocaleString('en-GB', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false // Use 24-hour format
-        });
+        const deltaTime = time - prevTime; // in milliseconds
+        prevTime = time;
+        date = getNextDateTime(date, deltaTime);
+        updateDateTimeLabels(date);
 
         scene.children.forEach(c => {
             const body = c.userData['body'] as Body;
