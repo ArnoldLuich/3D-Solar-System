@@ -33,11 +33,11 @@ import uranusringtrans from '@assets/uranus/uranusringtrans.gif';
 
 import { solarSystemData } from "../accurate-coords/bodies";
 import { AxisInfo, Body, HelioVector, KM_PER_AU, NextPlanetApsis, RotationAxis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
-import { degToRad } from "three/src/math/MathUtils.js";
+import { degToRad, radToDeg } from "three/src/math/MathUtils.js";
 import { setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import satellitesTle from "../earth-satellites/satellites-tle.txt?raw";
-import { sgp4, twoline2satrec } from "satellite.js";
+import { propagate, sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
 import { SceneUtils } from "three/examples/jsm/Addons.js";
@@ -164,18 +164,16 @@ export function addPlanet(data: typeof bodies2[number]) {
         satellites.name = satellitesName;
         // fetchTLEData('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle', true).then(satellitesData => {
         fetchTLEData(satellitesTle, false).then(satellitesData => {
-        satellitesData?.forEach(satelliteData => {
+            satellitesData?.forEach(satelliteData => {
                 const satelliteGeometry = new BoxGeometry(satelliteSize, satelliteSize, satelliteSize);
                 const satelliteMaterial = new MeshBasicMaterial({ color: 0xffffff });
                 const satelliteCube = new Mesh(satelliteGeometry, satelliteMaterial);
-
-                satelliteCube.userData.name = satelliteData.name;
-                satelliteCube.userData.satrec = twoline2satrec(satelliteData.line1, satelliteData.line2);
-
-                satellites.add(satelliteCube);
+                    satelliteCube.userData.name = satelliteData.name;
+                    satelliteCube.userData.satrec = twoline2satrec(satelliteData.line1, satelliteData.line2);
+                    
+                    satellites.add(satelliteCube);
             })
         });
-
         planet.add(satellites);
     }
     else if (data.body === Body.Sun){
@@ -375,14 +373,15 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     
                 const satellites = mesh.getObjectByName(satellitesName);
                 if (satellites) {
+                    const radius = c.userData['radius'] as number * KM_PER_AU;
                     satellites.children.forEach(satelliteElement => {
-                        const positionAndVelocity = sgp4(satelliteElement.userData.satrec, v.t.ut);
+                        const positionAndVelocity = propagate(satelliteElement.userData.satrec, date);
                         const positionEci = positionAndVelocity.position;
                         if (!positionEci || typeof positionEci === 'boolean') return;
                         
-                        const satellitePosX = positionEci.x / 6371.0;
-                        const satellitePosY = positionEci.z / 6371.0;
-                        const satellitePosZ = positionEci.y / 6371.0;
+                        const satellitePosX = -positionEci.x / radius;
+                        const satellitePosY = positionEci.z / radius;
+                        const satellitePosZ = positionEci.y / radius;
             
                         satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
                     });
