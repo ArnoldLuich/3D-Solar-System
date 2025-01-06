@@ -137,3 +137,7 @@ export function getNextDateTime(previous: Date, deltaTime: number) {
     const timeRate = getCurrentTimeRate();
     return new Date(previous.getTime() + deltaTime * timeRate);
 }
+
+export function getIsPaused() {
+    return paused;
+}
