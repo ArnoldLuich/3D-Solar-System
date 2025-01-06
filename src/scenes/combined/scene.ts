@@ -1,4 +1,4 @@
-import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color} from "three";
+import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color, Euler} from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -32,7 +32,7 @@ import uranusringcolour from '@assets/uranus/uranusringcolour.jpg';
 import uranusringtrans from '@assets/uranus/uranusringtrans.gif';
 
 import { solarSystemData } from "../accurate-coords/bodies";
-import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
+import { AxisInfo, Body, HelioVector, KM_PER_AU, NextPlanetApsis, RotationAxis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
@@ -290,7 +290,6 @@ bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
     planet.name = planetData.name;
     planet.userData['body'] = planetData.body;
-    planet.userData['rotation'] = planetData.rotation;
     planet.userData['radius'] = planetData.radius;
     makeOrbitLine(planetData);
     scene.add(planet);
@@ -388,16 +387,10 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
                         satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
                     });
                 }
-                
-                const hoursForFullRot = c.userData['rotation'];
-                if (hoursForFullRot) {
-                    // the sun doesn't have rotation in le system solaire data
-                    const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                    if (hourDiff > 0) {
-                        const degs = (360 * hourDiff) / hourDiff;
-                        mesh.rotateY(degToRad(degs));
-                    }
-                }
+
+                const rotation = RotationAxis(body, date);
+                mesh.up = AstroVectorToThreeVector(rotation.north);
+                mesh.setRotationFromEuler(new Euler(0, MathUtils.degToRad(rotation.spin),  0));
             });
         }
         updateCameraTarget();
