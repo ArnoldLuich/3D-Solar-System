@@ -41,7 +41,7 @@ import { sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
 import { SceneUtils } from "three/examples/jsm/Addons.js";
-import { getNextDateTime, updateDateTimeLabels } from "./date-time-controls";
+import { getIsPaused, getNextDateTime, updateDateTimeLabels } from "./date-time-controls";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 5000);
@@ -346,35 +346,6 @@ setCameraTarget(scene.getObjectByName('Sun'));
 
 //#endregion
 
-var timeSpeedMultiplier = 1;
-
-window.addEventListener('keydown', (event: KeyboardEvent): void => {
-    if (event.key === 'ArrowDown') {
-        timeSpeedMultiplier = 0;
-    }
-    if (event.key === 'ArrowRight') {
-        if (timeSpeedMultiplier == -10) {
-            timeSpeedMultiplier = 1;
-        }
-        else if (timeSpeedMultiplier < 0) {
-            timeSpeedMultiplier /= 10;
-        }
-        else if (timeSpeedMultiplier < 1000) {
-            timeSpeedMultiplier *= 10;
-        }
-    } else if (event.key === 'ArrowLeft') {
-        if (timeSpeedMultiplier == 1) {
-            timeSpeedMultiplier = -10;
-        }
-        else if (timeSpeedMultiplier > 0) {
-            timeSpeedMultiplier /= 10;
-        }
-        else if (timeSpeedMultiplier > -1000) {
-            timeSpeedMultiplier *= 10;
-        }
-    }
-});
-
 
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
@@ -391,43 +362,44 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
         prevTime = time;
         date = getNextDateTime(date, deltaTime);
         updateDateTimeLabels(date);
-
-        scene.children.forEach(c => {
-            const body = c.userData['body'] as Body;
-            if (!body) return;
-            const v = HelioVector(body, date);
-            // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
-            const vec = AstroVectorToThreeVector(v);
-            c.position.set(vec.x, vec.y, vec.z);
-
-            const mesh = c.getObjectByName(planetMeshName);
-            if (!mesh) return;
-
-            const satellites = mesh.getObjectByName(satellitesName);
-            if (satellites) {
-                satellites.children.forEach(satelliteElement => {
-                    const positionAndVelocity = sgp4(satelliteElement.userData.satrec, v.t.ut);
-                    const positionEci = positionAndVelocity.position;
-                    if (!positionEci || typeof positionEci === 'boolean') return;
-                    
-                    const satellitePosX = positionEci.x / 6371.0;
-                    const satellitePosY = positionEci.z / 6371.0;
-                    const satellitePosZ = positionEci.y / 6371.0;
-        
-                    satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
-                });
-            }
+        if (!getIsPaused()) {
+            scene.children.forEach(c => {
+                const body = c.userData['body'] as Body;
+                if (!body) return;
+                const v = HelioVector(body, date);
+                // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
+                const vec = AstroVectorToThreeVector(v);
+                c.position.set(vec.x, vec.y, vec.z);
+    
+                const mesh = c.getObjectByName(planetMeshName);
+                if (!mesh) return;
+    
+                const satellites = mesh.getObjectByName(satellitesName);
+                if (satellites) {
+                    satellites.children.forEach(satelliteElement => {
+                        const positionAndVelocity = sgp4(satelliteElement.userData.satrec, v.t.ut);
+                        const positionEci = positionAndVelocity.position;
+                        if (!positionEci || typeof positionEci === 'boolean') return;
+                        
+                        const satellitePosX = positionEci.x / 6371.0;
+                        const satellitePosY = positionEci.z / 6371.0;
+                        const satellitePosZ = positionEci.y / 6371.0;
             
-            const hoursForFullRot = c.userData['rotation'];
-            if (hoursForFullRot) {
-                // the sun doesn't have rotation in le system solaire data
-                const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                if (hourDiff > 0) {
-                    const degs = (360 * hourDiff) / hourDiff;
-                    mesh.rotateY(degToRad(degs));
+                        satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
+                    });
                 }
-            }
-        });
+                
+                const hoursForFullRot = c.userData['rotation'];
+                if (hoursForFullRot) {
+                    // the sun doesn't have rotation in le system solaire data
+                    const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
+                    if (hourDiff > 0) {
+                        const degs = (360 * hourDiff) / hourDiff;
+                        mesh.rotateY(degToRad(degs));
+                    }
+                }
+            });
+        }
         updateCameraTarget();
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = PCFSoftShadowMap;
