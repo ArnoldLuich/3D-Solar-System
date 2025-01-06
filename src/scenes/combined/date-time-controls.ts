@@ -48,9 +48,13 @@ function unpause() {
     paused = false;
 }
 
-function getCurrentTimeRate() {
-    if (paused) return 0;
+function getActualTimeRate() {
     return timeUnits[cursor];
+}
+
+function getDerivedTimeRate() {
+    if (paused) return 0;
+    return getActualTimeRate();
 }
 
 function getLabelFor(originalUnits: number[], secondsPerUnit: number[], timeRate: number, negative: boolean, singular: string, plural: string) {
@@ -60,9 +64,25 @@ function getLabelFor(originalUnits: number[], secondsPerUnit: number[], timeRate
     return `${negative ? '-' : ''}${originalUnits?.[idx]} ${plural}/s`
 }
 
-function getTimeRateLabel(timeRate: number) {
+function getTimeRateTitle() {
+    let timeRate = getDerivedTimeRate();
     if (timeRate === 0) return 'paused';
     if (timeRate === 1) return 'real rate';
+    const isNegative = timeRate < 0;
+    timeRate = Math.abs(timeRate);
+    if (seconds.includes(timeRate)) return getLabelFor(seconds, seconds, timeRate, isNegative, 'sec', 'secs');
+    if (minutesInSeconds.includes(timeRate)) return getLabelFor(minutes, minutesInSeconds, timeRate, isNegative, 'min', 'mins');
+    if (hoursInSeconds.includes(timeRate)) return getLabelFor(hours, hoursInSeconds, timeRate, isNegative, 'hour', 'hours');
+    if (daysInSeconds.includes(timeRate)) return getLabelFor(days, daysInSeconds, timeRate, isNegative, 'day', 'days');
+    if (weeksInSeconds.includes(timeRate)) return getLabelFor(weeks, weeksInSeconds, timeRate, isNegative, 'week', 'weeks');
+    if (monthsInSeconds.includes(timeRate)) return getLabelFor(months, monthsInSeconds, timeRate, isNegative, 'month', 'months');
+    if (yearsInSeconds.includes(timeRate)) return getLabelFor(years, yearsInSeconds, timeRate, isNegative, 'year', 'years');
+    return "???";
+}
+
+function getTimeRateSubtitle() {
+    let timeRate = getActualTimeRate();
+    if (!getIsPaused()) return '';
     const isNegative = timeRate < 0;
     timeRate = Math.abs(timeRate);
     if (seconds.includes(timeRate)) return getLabelFor(seconds, seconds, timeRate, isNegative, 'sec', 'secs');
@@ -95,6 +115,8 @@ window.addEventListener('keydown', (event: KeyboardEvent): void => {
 
 const dateLabel = document.getElementById('date-label')!;
 const rateLabel = document.getElementById('rate-label')!;
+const rateLabelTitle = document.getElementById('rate-label-title')!;
+const rateLabelSubTitle = document.getElementById('rate-label-subtitle')!;
 const timeLabel = document.getElementById('time-label')!;
 const pauseButton = document.getElementById('pause-button')!;
 const playButton = document.getElementById('play-button')!;
@@ -119,10 +141,8 @@ backButton.onclick = () => {
 }
 
 function updateTimeRateControls() {
-    const timeRate = getCurrentTimeRate();
-    if (rateLabel) {
-        rateLabel.innerText = getTimeRateLabel(timeRate);
-    }
+    rateLabelTitle.innerText = getTimeRateTitle();
+    rateLabelSubTitle.innerText = getTimeRateSubtitle();
     updateButtonVisibility(playButton, paused);
     updateButtonVisibility(pauseButton, !paused);
 }
@@ -134,7 +154,7 @@ export function updateDateTimeLabels(current: Date) {
 }
 
 export function getNextDateTime(previous: Date, deltaTime: number) {
-    const timeRate = getCurrentTimeRate();
+    const timeRate = getDerivedTimeRate();
     return new Date(previous.getTime() + deltaTime * timeRate);
 }
 

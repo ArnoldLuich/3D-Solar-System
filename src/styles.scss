@@ -97,6 +97,7 @@ body {
     justify-self: center;
     text-align: center;
     width: 20ch;
+    height: 2em;
   }
   #time-label {
     grid-area: time;
@@ -123,6 +124,12 @@ body {
   .label {
     color: white;
     font-size: x-large;
+    .title {
+      font-size: x-large;
+    }
+    .subtitle {
+      font-size: small;
+    }
   }
   .control-button {
     width: 48px;
