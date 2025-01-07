@@ -139,7 +139,6 @@ function updateSatelliteParticles(satelliteParticles: any, date: Date) {
 
     satelliteParticles.userData.satrecs.forEach((satrec: any, index: number) => {
         const positionEci = propagate(satrec, date);
-        console.log(positionEci);
         if (!positionEci || typeof(positionEci) === 'boolean' || !positionEci.position) {
             return;
         }
