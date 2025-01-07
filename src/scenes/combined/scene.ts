@@ -134,13 +134,13 @@ const planetMeshName = "planet mesh" as const;
 const satellitesName = "satellites" as const;
 const textureLoader = new TextureLoader();
 
-function updateSatelliteParticles(satelliteParticles: any, date: number) {
+function updateSatelliteParticles(satelliteParticles: any, date: Date) {
     const positions = satelliteParticles.geometry.attributes.position.array;
 
     satelliteParticles.userData.satrecs.forEach((satrec: any, index: number) => {
-        const positionEci = sgp4(satrec, 5);
+        const positionEci = propagate(satrec, date);
         console.log(positionEci);
-        if (!positionEci || typeof(positionEci) === 'boolean' || typeof(positionEci.position) === 'boolean') {
+        if (!positionEci || typeof(positionEci) === 'boolean' || !positionEci.position) {
             return;
         }
         
@@ -199,7 +199,7 @@ export function addPlanet(data: typeof bodies2[number]) {
                 
                 satelliteParticles.userData.satrecs = satrecs;
                 satelliteParticles.name = satellitesName;
-                updateSatelliteParticles(satelliteParticles, new Date().getTime());
+                updateSatelliteParticles(satelliteParticles, new Date());
                 planet.add(satelliteParticles);
             }
         });
@@ -399,20 +399,9 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
                 const mesh = c.getObjectByName(planetMeshName);
                 if (!mesh) return;
     
-                const satellites = mesh.getObjectByName(satellitesName);
-                if (satellites) {
-                    const radius = c.userData['radius'] as number * KM_PER_AU;
-                    satellites.children.forEach(satelliteElement => {
-                        const positionAndVelocity = propagate(satelliteElement.userData.satrec, date);
-                        const positionEci = positionAndVelocity.position;
-                        if (!positionEci || typeof positionEci === 'boolean') return;
-                        
-                        const satellitePosX = -positionEci.x / radius;
-                        const satellitePosY = positionEci.z / radius;
-                        const satellitePosZ = positionEci.y / radius;
-            
-                        satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
-                    });
+                const satelliteParticles = mesh.getObjectByName(satellitesName);
+                if (satelliteParticles) {
+                    updateSatelliteParticles(satelliteParticles, date);
                 }
 
                 const rotation = RotationAxis(body, date);
