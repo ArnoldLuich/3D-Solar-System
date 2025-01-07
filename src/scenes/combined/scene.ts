@@ -144,7 +144,7 @@ function updateSatelliteParticles(satelliteParticles: any, date: Date) {
             return;
         }
         
-        positions[index * 3] = positionEci.position.x / 6371.0;
+        positions[index * 3] = -positionEci.position.x / 6371.0;
         positions[index * 3 + 1] = positionEci.position.z / 6371.0;
         positions[index * 3 + 2] = positionEci.position.y / 6371.0;
     });
