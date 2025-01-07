@@ -1,4 +1,4 @@
-import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color, Float32BufferAttribute, Points, PointsMaterial} from "three";
+import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color, Euler, Float32BufferAttribute, Points, PointsMaterial} from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -25,16 +25,23 @@ import uranusTexture from '@assets/uranus/2k_uranus.jpg';
 
 import neptuneTexture from '@assets/neptune/2k_neptune.jpg';
 
+import saturnringcolor from '@assets/saturn/saturnringcolor.jpg';
+import saturnringpattern from '@assets/saturn/saturnringpattern.gif';
+
+import uranusringcolour from '@assets/uranus/uranusringcolour.jpg';
+import uranusringtrans from '@assets/uranus/uranusringtrans.gif';
+
 import { solarSystemData } from "../accurate-coords/bodies";
-import { Body, HelioVector, KM_PER_AU, NextPlanetApsis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
-import { degToRad } from "three/src/math/MathUtils.js";
+import { AxisInfo, Body, HelioVector, KM_PER_AU, NextPlanetApsis, RotationAxis, SearchPlanetApsis, StateVector, Vector } from "astronomy-engine";
+import { degToRad, radToDeg } from "three/src/math/MathUtils.js";
 import { setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import satellitesTle from "../earth-satellites/satellites-tle.txt?raw";
-import { SatRec, sgp4, twoline2satrec } from "satellite.js";
+import { propagate, SatRec, sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
 import { SceneUtils } from "three/examples/jsm/Addons.js";
+import { getIsPaused, getNextDateTime, updateDateTimeLabels } from "./date-time-controls";
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.000001, 5000);
@@ -224,8 +231,8 @@ export function addPlanet(data: typeof bodies2[number]) {
     } else if (data.body === Body.Saturn){
         createPlanetRings(
             planet, 
-            'src/assets/saturn/saturnringcolor.jpg', 
-            'src/assets/saturn/saturnringpattern.gif', 
+            saturnringcolor, 
+            saturnringpattern, 
             1.625, 
             3.167, 
             64, 
@@ -234,8 +241,8 @@ export function addPlanet(data: typeof bodies2[number]) {
     } else if (data.body === Body.Uranus){
         createPlanetRings(
             planet, 
-            'src/assets/uranus/uranusringcolour.jpg', 
-            'src/assets/uranus/uranusringtrans.gif', 
+            uranusringcolour, 
+            uranusringtrans, 
             1.218, 
             2.644, 
             64, 
@@ -309,7 +316,6 @@ bodies2.forEach(planetData => {
     const planet = addPlanet(planetData);
     planet.name = planetData.name;
     planet.userData['body'] = planetData.body;
-    planet.userData['rotation'] = planetData.rotation;
     planet.userData['radius'] = planetData.radius;
     makeOrbitLine(planetData);
     scene.add(planet);
@@ -365,42 +371,6 @@ setCameraTarget(scene.getObjectByName('Sun'));
 
 //#endregion
 
-var timeSpeedMultiplier = 1;
-
-window.addEventListener('keydown', (event: KeyboardEvent): void => {
-    if (event.key === 'ArrowDown') {
-        timeSpeedMultiplier = 0;
-    }
-    if (event.key === 'ArrowRight') {
-        if (timeSpeedMultiplier == -10) {
-            timeSpeedMultiplier = 1;
-        }
-        else if (timeSpeedMultiplier < 0) {
-            timeSpeedMultiplier /= 10;
-        }
-        else if (timeSpeedMultiplier < 1000) {
-            timeSpeedMultiplier *= 10;
-        }
-    } else if (event.key === 'ArrowLeft') {
-        if (timeSpeedMultiplier == 1) {
-            timeSpeedMultiplier = -10;
-        }
-        else if (timeSpeedMultiplier > 0) {
-            timeSpeedMultiplier /= 10;
-        }
-        else if (timeSpeedMultiplier > -1000) {
-            timeSpeedMultiplier *= 10;
-        }
-    }
-});
-
-var simulation_time_label = document.createElement('div');
-simulation_time_label.className = 'generic-text time';
-simulation_time_label.style.color = "var(--generic-color)";
-simulation_time_label.style.top = 50 + "px";
-simulation_time_label.style.right = 50 + "px";
-document.body.appendChild(simulation_time_label);
-
 
 camera.position.set(0, 3, 0);
 export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallback | null {
@@ -409,45 +379,47 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
     controls.connect();
     controls.target = new Vector3(2, 0, 0);
     controls.update();
+    
     let date = new Date();
+    let prevTime = 0;
     return (time: DOMHighResTimeStamp, frame: XRFrame) => {
-        time *= timeSpeedMultiplier;
-        date = new Date(date.getTime() + time);
-        simulation_time_label.innerHTML = date.toLocaleString('en-GB', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false // Use 24-hour format
-        });
-
-        scene.children.forEach(c => {
-            const body = c.userData['body'] as Body;
-            if (!body) return;
-            const v = HelioVector(body, date);
-            // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
-            const vec = AstroVectorToThreeVector(v);
-            c.position.set(vec.x, vec.y, vec.z);
-
-            const mesh = c.getObjectByName(planetMeshName);
-            if (!mesh) return;
-
-            const satelliteParticles = mesh.getObjectByName(satellitesName);
-            if (satelliteParticles) {
-                updateSatelliteParticles(satelliteParticles, v.t.ut);
-            }
+        const deltaTime = time - prevTime; // in milliseconds
+        prevTime = time;
+        date = getNextDateTime(date, deltaTime);
+        updateDateTimeLabels(date);
+        if (!getIsPaused()) {
+            scene.children.forEach(c => {
+                const body = c.userData['body'] as Body;
+                if (!body) return;
+                const v = HelioVector(body, date);
+                // const rotatedCoords = RotateVector(rotmat, new Vector(v.x, v.y, v.z, v.t));// rotate to the ecliptic plane (by default it's at an angle)
+                const vec = AstroVectorToThreeVector(v);
+                c.position.set(vec.x, vec.y, vec.z);
+    
+                const mesh = c.getObjectByName(planetMeshName);
+                if (!mesh) return;
+    
+                const satellites = mesh.getObjectByName(satellitesName);
+                if (satellites) {
+                    const radius = c.userData['radius'] as number * KM_PER_AU;
+                    satellites.children.forEach(satelliteElement => {
+                        const positionAndVelocity = propagate(satelliteElement.userData.satrec, date);
+                        const positionEci = positionAndVelocity.position;
+                        if (!positionEci || typeof positionEci === 'boolean') return;
+                        
+                        const satellitePosX = -positionEci.x / radius;
+                        const satellitePosY = positionEci.z / radius;
+                        const satellitePosZ = positionEci.y / radius;
             
-            const hoursForFullRot = c.userData['rotation'];
-            if (hoursForFullRot) {
-                // the sun doesn't have rotation in le system solaire data
-                const hourDiff = time / (1000 * 60 * 60 * 24); // milliseconds to days
-                if (hourDiff > 0) {
-                    const degs = (360 * hourDiff) / hourDiff;
-                    mesh.rotateY(degToRad(degs));
+                        satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
+                    });
                 }
-            }
-        });
+
+                const rotation = RotationAxis(body, date);
+                mesh.up = AstroVectorToThreeVector(rotation.north);
+                mesh.setRotationFromEuler(new Euler(0, MathUtils.degToRad(rotation.spin),  0));
+            });
+        }
         updateCameraTarget();
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = PCFSoftShadowMap;
