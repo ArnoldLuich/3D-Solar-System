@@ -1,4 +1,4 @@
-import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color, Euler} from "three";
+import { AxesHelper, DoubleSide,MathUtils, PCFSoftShadowMap, IcosahedronGeometry,RingGeometry, RepeatWrapping ,BoxGeometry, BufferGeometry, ColorRepresentation, Group, LineBasicMaterial, LineLoop, Mesh, MeshBasicMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, TextureLoader, Vector2, Vector3, WebGLRenderer, SphereGeometry, MeshPhongMaterial, DirectionalLight, AmbientLight, PointLight, Color, Euler, Float32BufferAttribute, Points, PointsMaterial} from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
@@ -37,7 +37,7 @@ import { degToRad, radToDeg } from "three/src/math/MathUtils.js";
 import { setupBloomEffect } from "../starField/createStars";
 import { fetchTLEData } from "../earth-satellites/fetch-tle";
 import satellitesTle from "../earth-satellites/satellites-tle.txt?raw";
-import { propagate, sgp4, twoline2satrec } from "satellite.js";
+import { propagate, SatRec, sgp4, twoline2satrec } from "satellite.js";
 
 import { loadStarsFromJson } from "../starField/realStarField";
 import { SceneUtils } from "three/examples/jsm/Addons.js";
@@ -134,6 +134,24 @@ const planetMeshName = "planet mesh" as const;
 const satellitesName = "satellites" as const;
 const textureLoader = new TextureLoader();
 
+function updateSatelliteParticles(satelliteParticles: any, date: Date) {
+    const positions = satelliteParticles.geometry.attributes.position.array;
+
+    satelliteParticles.userData.satrecs.forEach((satrec: any, index: number) => {
+        const positionEci = propagate(satrec, date);
+        console.log(positionEci);
+        if (!positionEci || typeof(positionEci) === 'boolean' || !positionEci.position) {
+            return;
+        }
+        
+        positions[index * 3] = positionEci.position.x / 6371.0;
+        positions[index * 3 + 1] = positionEci.position.z / 6371.0;
+        positions[index * 3 + 2] = positionEci.position.y / 6371.0;
+    });
+
+    satelliteParticles.geometry.attributes.position.needsUpdate = true;
+}
+
 export function addPlanet(data: typeof bodies2[number]) {
     const planetGroup = new Group();
     planetGroup.position.set(data.vec.x, data.vec.y, data.vec.z);
@@ -159,22 +177,32 @@ export function addPlanet(data: typeof bodies2[number]) {
     }));
 
     if (data.body === Body.Earth) {
-        const satellites = new Group();
-        const satelliteSize = 0.001;
-        satellites.name = satellitesName;
+        const satelliteSize = 0.000001;
         // fetchTLEData('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle', true).then(satellitesData => {
         fetchTLEData(satellitesTle, false).then(satellitesData => {
-            satellitesData?.forEach(satelliteData => {
-                const satelliteGeometry = new BoxGeometry(satelliteSize, satelliteSize, satelliteSize);
-                const satelliteMaterial = new MeshBasicMaterial({ color: 0xffffff });
-                const satelliteCube = new Mesh(satelliteGeometry, satelliteMaterial);
-                    satelliteCube.userData.name = satelliteData.name;
-                    satelliteCube.userData.satrec = twoline2satrec(satelliteData.line1, satelliteData.line2);
-                    
-                    satellites.add(satelliteCube);
-            })
+            if (satellitesData) {
+                const satellitePositions = new Float32Array(satellitesData.length * 3);
+
+                const geometry = new BufferGeometry();
+                geometry.setAttribute("position", new Float32BufferAttribute(satellitePositions, 3));
+
+                const material = new PointsMaterial({
+                    color: 0xffffff,
+                    size: satelliteSize
+                })
+
+                const satelliteParticles = new Points(geometry, material);
+                let satrecs: SatRec[] = [];
+                satellitesData.forEach(satelliteData => {
+                    satrecs.push(twoline2satrec(satelliteData.line1, satelliteData.line2));
+                });
+                
+                satelliteParticles.userData.satrecs = satrecs;
+                satelliteParticles.name = satellitesName;
+                updateSatelliteParticles(satelliteParticles, new Date());
+                planet.add(satelliteParticles);
+            }
         });
-        planet.add(satellites);
     }
     else if (data.body === Body.Sun){
         const sunLight = new PointLight(0xffffff, 1, 0);
@@ -371,20 +399,9 @@ export function cameraTestAnimLoop(renderer: WebGLRenderer): XRFrameRequestCallb
                 const mesh = c.getObjectByName(planetMeshName);
                 if (!mesh) return;
     
-                const satellites = mesh.getObjectByName(satellitesName);
-                if (satellites) {
-                    const radius = c.userData['radius'] as number * KM_PER_AU;
-                    satellites.children.forEach(satelliteElement => {
-                        const positionAndVelocity = propagate(satelliteElement.userData.satrec, date);
-                        const positionEci = positionAndVelocity.position;
-                        if (!positionEci || typeof positionEci === 'boolean') return;
-                        
-                        const satellitePosX = -positionEci.x / radius;
-                        const satellitePosY = positionEci.z / radius;
-                        const satellitePosZ = positionEci.y / radius;
-            
-                        satelliteElement.position.set(satellitePosX, satellitePosY, satellitePosZ);
-                    });
+                const satelliteParticles = mesh.getObjectByName(satellitesName);
+                if (satelliteParticles) {
+                    updateSatelliteParticles(satelliteParticles, date);
                 }
 
                 const rotation = RotationAxis(body, date);
