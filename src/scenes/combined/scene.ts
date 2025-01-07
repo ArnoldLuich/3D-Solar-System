@@ -176,7 +176,7 @@ export function addPlanet(data: typeof bodies2[number]) {
     }));
 
     if (data.body === Body.Earth) {
-        const satelliteSize = 0.000001;
+        const satelliteSize = 0.0000001;
         // fetchTLEData('https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle', true).then(satellitesData => {
         fetchTLEData(satellitesTle, false).then(satellitesData => {
             if (satellitesData) {
